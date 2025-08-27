@@ -1,0 +1,245 @@
+________________________ Date: 2025_08_26__11_30_11 ___________________________ 
+
+===== d1-nx-vm =====
+Last password change					: Jul 17, 2025
+Password expires					: Jul 17, 2026
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 365
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+2025-08-26 04:06:50 SVC   login                                                V
+2025-08-26 04:06:55 SVC   login                                                V
+2025-08-26 04:07:00 SVC   login                                                V
+
+
+===== d1-nx-files =====
+Last password change					: Jul 17, 2025
+Password expires					: Sep 15, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+2025-08-26 04:06:50 SVC   login                                                V
+2025-08-26 04:06:50 SVC   login                                                V
+2025-08-26 04:06:54 SVC   login                                                V
+
+
+===== d1-nx-sql =====
+Last password change					: Jul 17, 2025
+Password expires					: Sep 15, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+2025-08-26 04:10:48 SVC   login                                                V
+2025-08-26 04:10:48 SVC   login                                                V
+2025-08-26 04:10:51 SVC   login                                                V
+
+
+===== d1-nx-objects =====
+Last password change					: Aug 22, 2025
+Password expires					: Oct 21, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+2025-08-26 00:10:53 SVC   login                                                V
+2025-08-26 00:10:54 SVC   login                                                V
+2025-08-26 00:10:55 SVC   login                                                V
+2025-08-26 00:10:55 SVC   login                                                V
+2025-08-26 00:10:58 SVC   login                                                V
+
+
+===== d2-nx-vm =====
+Last password change					: Jul 17, 2025
+Password expires					: Nov 14, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 120
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+2025-08-26 00:07:40 SVC   login                                                V
+2025-08-26 00:07:41 SVC   login                                                V
+2025-08-26 00:07:41 SVC   login                                                V
+
+
+===== d2-nx-files =====
+Last password change					: Jul 17, 2025
+Password expires					: Nov 14, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 120
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+2025-08-26 04:06:46 SVC   login                                                V
+2025-08-26 04:06:49 SVC   login                                                V
+2025-08-26 04:06:52 SVC   login                                                V
+
+
+===== d2-nx-sql =====
+Last password change					: Jul 17, 2025
+Password expires					: Nov 14, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 120
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+2025-08-26 00:10:50 SVC   login                                                V
+2025-08-26 00:10:50 SVC   login                                                V
+2025-08-26 00:10:52 SVC   login                                                V
+
+
+===== d2-nx-objects =====
+Last password change					: Aug 22, 2025
+Password expires					: Oct 21, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+2025-08-26 04:10:55 SVC   login                                                V
+2025-08-26 04:10:58 SVC   login                                                V
+2025-08-26 04:11:02 SVC   login                                                V
+2025-08-26 04:11:05 SVC   login                                                V
+2025-08-26 04:11:07 SVC   login                                                V
+
+
+===== s1-nx-vm =====
+Last password change					: Mar 04, 2025
+Password expires					: Mar 04, 2026
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 365
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+2025-08-26 00:16:11 SVC   login                                                V
+2025-08-26 00:16:11 SVC   login                                                V
+2025-08-26 00:16:14 SVC   login                                                V
+2025-08-26 00:16:14 SVC   login                                                V
+2025-08-26 00:16:15 SVC   login                                                V
+
+
+===== d1-nx-vdi =====
+Last password change					: Aug 08, 2025
+Password expires					: Oct 07, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+
+
+===== d2-nx-vdi =====
+Last password change					: Aug 08, 2025
+Password expires					: Oct 07, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+
+
+===== d1-nx-prism =====
+Last password change					: Jul 17, 2025
+Password expires					: Sep 15, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+
+
+===== d2-nx-prism =====
+Last password change					: Jul 17, 2025
+Password expires					: Sep 15, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+
+
+===== S1-nx-prism =====
+Last password change					: Aug 11, 2025
+Password expires					: Feb 07, 2026
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 180
+Number of days of warning before password expires	: 7
+
+
+===== d1-nx-objprism =====
+Last password change					: Aug 11, 2025
+Password expires					: Oct 10, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== d2-nx-objprism =====
+Last password change					: Jun 04, 2025
+Password expires					: Oct 02, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 120
+Number of days of warning before password expires	: 7
+
+
+===== d1-nx-vdiprism =====
+Last password change					: Aug 08, 2025
+Password expires					: Oct 07, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+
+
+===== d2-nx-vdiprism =====
+Last password change					: Aug 08, 2025
+Password expires					: Oct 07, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+admin:
+When                Type  Source                                           Valid
+
+

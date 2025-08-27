@@ -1,0 +1,162 @@
+________________________ Date: 2025_08_22__09_32_03 ___________________________ 
+
+===== D1-NX-FILES =====
+Last password change					: Jul 17, 2025
+Password expires					: Sep 15, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== D1-NX-SQL =====
+Last password change					: Jul 17, 2025
+Password expires					: Sep 15, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== D1-NX-VM =====
+Last password change					: Jul 17, 2025
+Password expires					: Jul 17, 2026
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 365
+Number of days of warning before password expires	: 7
+
+
+===== D1-NX-PRISM =====
+Last password change					: Jul 17, 2025
+Password expires					: Sep 15, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== D2-NX-FILES =====
+Last password change					: Jul 17, 2025
+Password expires					: Nov 14, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 120
+Number of days of warning before password expires	: 7
+
+
+===== D2-NX-SQL =====
+Last password change					: Jul 17, 2025
+Password expires					: Nov 14, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 120
+Number of days of warning before password expires	: 7
+
+
+===== D2-NX-VM =====
+Last password change					: Jul 17, 2025
+Password expires					: Nov 14, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 120
+Number of days of warning before password expires	: 7
+
+
+===== D2-NX-PRISM =====
+Last password change					: Jul 17, 2025
+Password expires					: Sep 15, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== D1-NX-OBJECTS =====
+Last password change					: Aug 22, 2025
+Password expires					: Oct 21, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== D2-NX-OBJECTS =====
+Last password change					: Feb 06, 2025
+Password expires					: Apr 07, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== D1-NX-OBJPRISM =====
+Last password change					: Aug 11, 2025
+Password expires					: Oct 10, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== D2-NX-OBJPRISM =====
+Last password change					: Jun 04, 2025
+Password expires					: Oct 02, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 120
+Number of days of warning before password expires	: 7
+
+
+===== D1-NX-VDI =====
+Last password change					: Aug 08, 2025
+Password expires					: Oct 07, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== D2-NX-VDI =====
+Last password change					: Aug 08, 2025
+Password expires					: Oct 07, 2025
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 60
+Number of days of warning before password expires	: 7
+
+
+===== S1-NX-VM =====
+Last password change					: Mar 04, 2025
+Password expires					: Mar 04, 2026
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 365
+Number of days of warning before password expires	: 7
+
+
+===== S1-NX-PRISM =====
+Last password change					: Aug 11, 2025
+Password expires					: Feb 07, 2026
+Password inactive					: never
+Account expires						: never
+Minimum number of days between password change		: 1
+Maximum number of days between password change		: 180
+Number of days of warning before password expires	: 7
+
+
