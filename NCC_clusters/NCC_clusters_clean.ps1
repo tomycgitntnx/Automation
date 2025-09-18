@@ -1,5 +1,5 @@
-# NCC_clusters.ps1 v2.1  Sept 18, 2025
-# One cleaned file per cluster, only lines after the last "----+"
+# NCC_clusters.ps1 v2.2  Sept 18, 2025
+# One cleaned file per cluster, keeps last "----+" line for reference
 # ANSI escape codes removed, no trailing blank lines
 
 # Define paths and variables 
@@ -49,8 +49,8 @@ foreach ($namecluster in $clusters) {
     }) | Select-Object -Last 1
 
     if ($lastSepIndex -is [int]) {
-        # Keep only lines AFTER the separator
-        $lines = $lines[($lastSepIndex + 1)..($lines.Count - 1)]
+        # Keep the last separator and everything after it
+        $lines = $lines[$lastSepIndex..($lines.Count - 1)]
     }
 
     # Trim trailing whitespace and remove final blank lines
