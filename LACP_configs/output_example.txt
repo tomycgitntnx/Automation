@@ -1,0 +1,57 @@
+Connecting to d1-nx-vdi...
+================== 10.21.7.11 =================
+Bridge: br0
+  Bond: br0-up
+    bond_mode: balance-tcp
+    interfaces: eth5 eth4
+    lacp: active
+    lacp-fallback: true
+    lacp_speed: slow
+    lacp_status: negotiated
+================== 10.21.7.12 =================
+Bridge: br0
+  Bond: br0-up
+    bond_mode: balance-tcp
+    interfaces: eth4 eth5
+    lacp: active
+    lacp-fallback: true
+    lacp_speed: slow
+    lacp_status: negotiated
+================== 10.21.7.13 =================
+Bridge: br0
+  Bond: br0-up
+    bond_mode: balance-tcp
+    interfaces: eth4 eth5
+    lacp: active
+    lacp-fallback: true
+    lacp_speed: slow
+    lacp_status: negotiated
+Connecting to d2-nx-vdi...
+================== 10.22.7.11 =================
+Bridge: br0
+  Bond: br0-up
+    bond_mode: balance-tcp
+    interfaces: eth5 eth4
+    lacp: active
+    lacp-fallback: true
+    lacp_speed: slow
+    lacp_status: negotiated
+================== 10.22.7.13 =================
+Bridge: br0
+  Bond: br0-up
+    bond_mode: balance-tcp
+    interfaces: eth5 eth4
+    lacp: active
+    lacp-fallback: true
+    lacp_speed: slow
+    lacp_status: negotiated
+================== 10.22.7.12 =================
+Bridge: br0
+  Bond: br0-up
+    bond_mode: balance-tcp
+    interfaces: eth4 eth5
+    lacp: active
+    lacp-fallback: true
+    lacp_speed: slow
+    lacp_status: negotiated
+All done. Output saved to .\LACP_configs.txt
