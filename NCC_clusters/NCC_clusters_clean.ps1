@@ -1,6 +1,7 @@
-# NCC_clusters.ps1 v2.2  Sept 18, 2025
+# NCC_clusters.ps1 v2.3  Sept 18, 2025
 # One cleaned file per cluster, keeps last "----+" line for reference
 # ANSI escape codes removed, no trailing blank lines
+# Fixed: removed use of ForEach-Object -Index which caused error on older PS versions
 
 # Define paths and variables 
 $clusterFile = ".\clusters.txt" 
@@ -34,37 +35,49 @@ foreach ($namecluster in $clusters) {
         "$remoteCommand" 
     ) 
 
-    $result = & $plinkPath @plinkArgs 2>&1 
+    $result = & $plinkPath @plinkArgs 2>&1
 
     # --- Strip ANSI escape sequences ---
-    $cleanResult = $result -replace '\x1B\[[0-9;]*[A-Za-z]', ''
+    # using the ASCII ESC char so this works reliably
+    $esc = [char]27
+    $cleanResult = $result -replace "$esc\[[0-9;]*[A-Za-z]", ''
 
-    # Split into lines
-    $lines = $cleanResult -split "`n"
+    # Split into lines (handles both CRLF and LF)
+    $lines = [regex]::Split($cleanResult, "\r?\n")
 
-    # --- Find last separator line index ---
-    $lastSepIndex = ($lines | ForEach-Object -Index ($i=0) {
-        if ($_ -match '^-{5,}\+$') { $i }
-        $i++
-    }) | Select-Object -Last 1
-
-    if ($lastSepIndex -is [int]) {
-        # Keep the last separator and everything after it
-        $lines = $lines[$lastSepIndex..($lines.Count - 1)]
+    # --- Find last separator line index (backwards search for compatibility) ---
+    $lastSepIndex = -1
+    for ($i = $lines.Count - 1; $i -ge 0; $i--) {
+        if ($lines[$i] -match '^-{5,}\+$') {
+            $lastSepIndex = $i
+            break
+        }
     }
 
-    # Trim trailing whitespace and remove final blank lines
+    if ($lastSepIndex -ge 0) {
+        # Keep the last separator and everything after it
+        $lines = $lines[$lastSepIndex..($lines.Count - 1)]
+    } else {
+        # No separator found: keep entire output (fallback)
+        # $lines stays as-is
+    }
+
+    # Trim trailing whitespace from each line and remove trailing blank lines
     $lines = $lines | ForEach-Object { $_.TrimEnd() }
     while ($lines.Count -gt 0 -and [string]::IsNullOrWhiteSpace($lines[-1])) {
+        if ($lines.Count -eq 1) {
+            $lines = @() ; break
+        }
         $lines = $lines[0..($lines.Count - 2)]
     }
 
     # Output file per cluster
-    $outputFile = ".\${namecluster}_NCC_$dateStamp.txt"
+    $outputFile = ".\$($namecluster)_NCC_$dateStamp.txt"
 
     # Write header + cluster marker + cleaned output
-    Set-Content -Path $outputFile -Value "________________________ Date: $datestamp ___________________________ `n"
-    Add-Content -Path $outputFile -Value "===== $namecluster =====" 
+    Set-Content -Path $outputFile -Value "________________________ Date: $dateStamp ___________________________ `n"
+    Add-Content -Path $outputFile -Value "===== $namecluster ====="
+
     if ($lines.Count -gt 0) {
         Add-Content -Path $outputFile -Value ($lines -join "`r`n")
     }
