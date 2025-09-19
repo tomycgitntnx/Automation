@@ -1,12 +1,37 @@
-Detailed information for [1mdns_server_check[0m:
-Node [1m10.22.7.13[0m: 
-[35;22mWARN[0m: File /etc/hosts is invalid.
-['127.0.0.1 ntnx-d2-vdi03-cvm'] is/are missing from the file.
 
-Node [1m10.22.7.12[0m: 
-[35;22mWARN[0m: File /etc/hosts is invalid.
-['127.0.0.1 ntnx-d2-vdi02-cvm'] is/are missing from the file.
-
-Node [1m10.22.7.11[0m: 
-[35;22mWARN[0m: File /etc/hosts is invalid.
-['127.0.0.1 ntnx-d2-vdi01-cvm'] is/are missing from the file.
+All checks complete. Generating HTML report...
+Unable to find type [System.Web.HttpUtility].
+At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
++         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
++                        ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
+    + FullyQualifiedErrorId : TypeNotFound
+ 
+Unable to find type [System.Web.HttpUtility].
+At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
++         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
++                        ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
+    + FullyQualifiedErrorId : TypeNotFound
+ 
+Unable to find type [System.Web.HttpUtility].
+At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
++         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
++                        ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
+    + FullyQualifiedErrorId : TypeNotFound
+ 
+Unable to find type [System.Web.HttpUtility].
+At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
++         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
++                        ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
+    + FullyQualifiedErrorId : TypeNotFound
+ 
+Unable to find type [System.Web.HttpUtility].
+At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
++         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
++                        ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
+    + FullyQualifiedErrorId : TypeNotFound
+ 
