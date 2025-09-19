@@ -1,6 +1,8 @@
-# NCC_clusters.ps1 v1.1  Sept 19, 2025
+# NCC_clusters.ps1 v1.2  Sept 19, 2025
 # This script runs full NCC checks on all clusters in clusters.txt
 # v1.1 - Modified to filter output and show only the lines after the final separator.
+# v1.2 - Creates a separate output file per cluster in a timestamped directory.
+#      - Removes the final "Plugin output written to..." line from the summary.
 # This is not a Nutanix Supported script. Do not use to run any config change or disruptive commnads.
 # Usage: .\NCC_clusters.ps1
 
@@ -15,11 +17,10 @@ $AOS_command="ncc health_checks run_all"
 $env="PS1=x source /etc/profile; unset PS1"
 $remoteCommand =  $env + ";" + $AOS_command
 
-# Generate a timestamped output file
+# --- MODIFICATION: Create a timestamped directory for the reports ---
 $dateStamp = Get-Date -Format "yyyy_MM_dd__HH_mm_ss"
-$outputFile = ".\Nutanix_NCC_Clusters_$dateStamp.txt"
-# Setup output file
-Set-Content -Path $outputFile -Value "________________________ Date: $dateStamp ___________________________ `n"
+$outputDir = ".\NCC_Reports_$dateStamp"
+New-Item -ItemType Directory -Path $outputDir -ErrorAction SilentlyContinue | Out-Null
 
 # Check if clusters file exists
 if (-not (Test-Path $clusterFile)) {
@@ -34,6 +35,9 @@ $clusters = Get-Content $clusterFile | Where-Object { $_.Trim() -ne "" }
 foreach ($namecluster in $clusters) {
     Write-Host "Connecting to $namecluster..." -ForegroundColor Yellow
 
+    # --- MODIFICATION: Define a unique output file for each cluster ---
+    $outputFile = Join-Path -Path $outputDir -ChildPath "$namecluster-NCC_Report.txt"
+
     $plinkArgs = @(
         "-batch"
         "-t"
@@ -45,9 +49,7 @@ foreach ($namecluster in $clusters) {
 
     $result = & $plinkPath @plinkArgs 2>&1
 
-    # --- MODIFICATION START ---
-    # The following block filters the output to show only lines after the final separator.
-
+    # Filter the output to show only lines after the final separator.
     $separator = "-------------------------------------------------------------------------------+"
     $lines = $result -split "`r?`n" # Split raw output into an array of lines
 
@@ -63,29 +65,33 @@ foreach ($namecluster in $clusters) {
     # Prepare an array to hold the final, filtered lines
     $filteredLines = @()
 
-    # If the separator was found, get all lines that come after it
     if ($lastSeparatorIndex -ne -1) {
-        # Check if there are any lines after the separator
         if ($lastSeparatorIndex + 1 -lt $lines.Count) {
              $filteredLines = $lines[($lastSeparatorIndex + 1)..($lines.Count - 1)]
         }
-        # If there are no lines after, $filteredLines remains an empty array.
     } else {
-        # If the separator is not found, use the full output and display a warning
-        Write-Host "Separator not found for $namecluster. Displaying full output." -ForegroundColor Magenta
+        Write-Host "Separator not found for $namecluster. Using full output." -ForegroundColor Magenta
         $filteredLines = $lines
     }
-    # --- MODIFICATION END ---
+
+    # --- MODIFICATION: Remove the last line if it starts with "Plugin output written to " ---
+    if ($filteredLines.Count -gt 0 -and $filteredLines[-1].TrimStart().StartsWith("Plugin output written to ")) {
+        # Re-create the array, excluding the last element
+        $filteredLines = $filteredLines[0..($filteredLines.Count - 2)]
+    }
 
     # Display filtered output on screen:
+    Write-Host "===== Summary for $namecluster =====" -ForegroundColor Green
     $filteredLines | ForEach-Object {Write-Host $_ -ForegroundColor Cyan}
+    Write-Host "" # Add a blank line for readability
 
-    # Save filtered output with host header
-    Add-Content -Path $outputFile -Value "===== $namecluster ====="
+    # Save filtered output to its own file
     if ($filteredLines.Count -gt 0) {
-        Add-Content -Path $outputFile -Value $filteredLines
+        Set-Content -Path $outputFile -Value $filteredLines
+    } else {
+        # Create an empty file to signify the check ran but had no summary output
+        Set-Content -Path $outputFile -Value "No summary output was found after the separator."
     }
-    Add-Content -Path $outputFile -Value "`n"
 }
 
-Write-Host "All done. Output saved to $outputFile" -ForegroundColor Green
+Write-Host "All done. Output for each cluster saved in the '$outputDir' directory." -ForegroundColor Green
