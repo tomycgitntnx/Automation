@@ -1,37 +1,6 @@
-
-All checks complete. Generating HTML report...
-Unable to find type [System.Web.HttpUtility].
-At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
-+         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
-+                        ~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
-    + FullyQualifiedErrorId : TypeNotFound
- 
-Unable to find type [System.Web.HttpUtility].
-At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
-+         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
-+                        ~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
-    + FullyQualifiedErrorId : TypeNotFound
- 
-Unable to find type [System.Web.HttpUtility].
-At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
-+         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
-+                        ~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
-    + FullyQualifiedErrorId : TypeNotFound
- 
-Unable to find type [System.Web.HttpUtility].
-At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
-+         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
-+                        ~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
-    + FullyQualifiedErrorId : TypeNotFound
- 
-Unable to find type [System.Web.HttpUtility].
-At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_Clusters_page.ps1:196 char:24
-+         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
-+                        ~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (System.Web.HttpUtility:TypeName) [], RuntimeException
-    + FullyQualifiedErrorId : TypeNotFound
- 
+Method invocation failed because [System.Management.Automation.PSInternalMemberSet] does not contain a method named 'ContainsKey'.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_clusters_v11.ps1:176 char:21
++                 if ($statusCounts.PSBase.ContainsKey($statusName)) {
++                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (ContainsKey:String) [], RuntimeException
+    + FullyQualifiedErrorId : MethodNotFound
