@@ -1,10 +1,10 @@
-# NCC_clusters.ps1 v1.10  Sep 23, 2025
+# NCC_clusters.ps1 v1.11  Sep 23, 2025
 # This script runs full NCC checks on all clusters in clusters.txt
 #
-# v1.7 - Base version with PowerShell 5.1 compatibility.
-# v1.10 - Reworked HTML summary to parse the 'State | Count' table.
-#       - Displays a detailed, pipe-separated, color-coded breakdown in the summary.
-#       - Pass:Green, Info:Cyan, Warning:Yellow, Fail:Red, Error:Magenta.
+# v1.10 - Reworked HTML summary to parse 'State | Count' table.
+# v1.11 - Fixed the summary table parsing logic to be more robust.
+#       - Added new color-coding rules for specific prefixes in the detailed view.
+#       - Pass:Green, Info(summary):Cyan, Info(detail):Blue, Warn:Yellow, Fail:Red, Error:Magenta, Detail:LightBlue
 #
 # This is not a Nutanix Supported script. Do not use to run any config change or disruptive commnads.
 # Usage: .\NCC_clusters.ps1
@@ -108,15 +108,17 @@ $htmlHead = @"
         pre { background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; line-height: 1.5; }
         /* --- MODIFICATION: Color definitions as requested --- */
         .status-pass { color: #28a745; font-weight: bold; } /* Green */
-        .status-info { color: #0dcaf0; font-weight: bold; } /* Cyan */
+        .status-info { color: #0dcaf0; font-weight: bold; } /* Cyan for summary table*/
         .status-warn { color: #ffc107; font-weight: bold; } /* Yellow */
         .status-fail { color: #dc3545; font-weight: bold; } /* Red */
         .status-error { color: #d63384; font-weight: bold; } /* Magenta */
+        /* --- MODIFICATION: New classes for detailed view --- */
+        .detail-info { color: #0d6efd; } /* Blue for INFO lines */
+        .detail-detail { color: #87CEEB; } /* Light Blue for "Detailed info..." */
         .summary-table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .summary-table th, .summary-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         .summary-table th { background-color: #e9ecef; color: #333; }
         .summary-table tr:nth-child(even) { background-color: #f8f9fa; }
-        /* --- MODIFICATION: Use monospaced font for alignment and set vertical alignment --- */
         .summary-table td { vertical-align: top; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; }
         .summary-table td a { color: #007bff; text-decoration: none; font-weight: bold; }
         .summary-table td a:hover { text-decoration: underline; }
@@ -137,41 +139,34 @@ foreach ($reportFile in $reportFiles) {
     $fileContentLines = Get-Content -Path $reportFile.FullName
     $fileContentRaw = $fileContentLines -join "`n"
 
-    # Determine overall status for sorting priority (FAIL/ERROR highest)
-    $statusPriority = 4 # Default priority for INFO/PASS
-    if ($fileContentRaw -match 'FAIL|Error') { # Case sensitive 'Error' from NCC table
-        $statusPriority = 1
-    } elseif ($fileContentRaw -match 'Warning') { # Case sensitive 'Warning'
-        $statusPriority = 2
-    } elseif ($fileContentRaw -match 'PASS') {
-        $statusPriority = 3
-    }
+    $statusPriority = 4 # Default priority
+    if ($fileContentRaw -match 'FAIL|Error') { $statusPriority = 1 }
+    elseif ($fileContentRaw -match 'Warning') { $statusPriority = 2 }
+    elseif ($fileContentRaw -match 'PASS') { $statusPriority = 3 }
 
-    # --- MODIFICATION: Parse detailed status counts into an ordered dictionary ---
-    $statusCounts = [ordered]@{
-        'Fail' = 0; 'Error' = 0; 'Warning' = 0; 'Pass' = 0; 'Info' = 0
-    }
+    # --- FIX #1: More robust parsing of the status table ---
+    $statusCounts = [ordered]@{ 'Fail' = 0; 'Error' = 0; 'Warning' = 0; 'Pass' = 0; 'Info' = 0 }
     $foundStatusTable = $false
     foreach ($line in $fileContentLines) {
         if (-not $foundStatusTable -and $line -match 'State\s*\|\s*Count') {
             $foundStatusTable = $true
-            continue # Start processing from the next line
+            continue
         }
         if ($foundStatusTable) {
-            if ($line.Trim().StartsWith('+--')) { break } # Stop at the end of the table
-            $parts = $line.Split('|', [System.StringSplitOptions]::RemoveEmptyEntries)
-            if ($parts.Count -ge 2) {
-                $statusName = $parts[0].Trim()
-                if ($statusCounts.Contains($statusName)) {
-                    $statusCounts[$statusName] = $parts[1].Trim() -as [int]
+            if ($line.Trim().StartsWith('+--')) { break }
+
+            # Use regex with named captures for reliability
+            if ($line -match '\|\s*(?<Status>\w+)\s*\|\s*(?<Count>\d+)\s*\|') {
+                $statusName = $matches.Status
+                if ($statusCounts.ContainsKey($statusName)) {
+                    $statusCounts[$statusName] = $matches.Count -as [int]
                 }
             }
         }
     }
 
-    # --- MODIFICATION: Build the new pipe-separated, color-coded HTML string ---
+    # Build the new pipe-separated, color-coded HTML string
     $htmlParts = @()
-    # Iterate through the ordered dictionary to maintain consistent order
     foreach ($statusName in $statusCounts.Keys) {
         $count = $statusCounts[$statusName]
         if ($count -gt 0) {
@@ -181,9 +176,8 @@ foreach ($reportFile in $reportFiles) {
                 'Error'   { $className = 'status-error'; break }
                 'Warning' { $className = 'status-warn'; break }
                 'Pass'    { $className = 'status-pass'; break }
-                'Info'    { $className = 'status-info'; break }
+                'Info'    { $className = 'status-info'; break } # Uses Cyan class
             }
-            # Add spaces for padding inside the pipes
             $htmlParts += " <span class='$className'>$statusName $count</span> "
         }
     }
@@ -197,11 +191,10 @@ foreach ($reportFile in $reportFiles) {
         ClusterName    = $clusterName
         ReportFile     = $reportFile
         StatusPriority = $statusPriority
-        DetailedStatus = $detailedStatusHtml # The new, formatted HTML string
+        DetailedStatus = $detailedStatusHtml
     }
 }
 
-# Sort the data by priority and then by name
 $summaryData = $summaryData | Sort-Object StatusPriority, ClusterName
 
 # Build the HTML summary table
@@ -216,11 +209,10 @@ $summaryTableHtml = @"
     </thead>
     <tbody>
 "@
-
 foreach ($item in $summaryData) {
     $summaryTableHtml += "<tr>"
     $summaryTableHtml += "<td><a href='#cluster-$($item.ClusterName)'>$($item.ClusterName)</a></td>"
-    $summaryTableHtml += "<td>$($item.DetailedStatus)</td>" # Use the new pipe-formatted string
+    $summaryTableHtml += "<td>$($item.DetailedStatus)</td>"
     $summaryTableHtml += "</tr>`n"
 }
 $summaryTableHtml += "</tbody></table>"
@@ -234,26 +226,42 @@ foreach ($item in $summaryData) {
     $formattedContent = ""
     foreach ($line in $fileContent) {
         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
-        # Separate Fail and Error for distinct coloring in the detailed view
-        if ($line -match 'FAIL') {
+        $trimmedLine = $line.TrimStart()
+
+        # --- FIX #2: New, specific color rules for line prefixes ---
+        if ($trimmedLine.StartsWith("FAIL:", "CurrentCultureIgnoreCase")) {
             $formattedContent += "<span class='status-fail'>$encodedLine</span>`n"
-        } elseif ($line -match 'Error') { # Case sensitive to match table output
+        } elseif ($trimmedLine.StartsWith("ERR:", "CurrentCultureIgnoreCase")) {
             $formattedContent += "<span class='status-error'>$encodedLine</span>`n"
-        } elseif ($line -match 'Warning') { # Case sensitive
+        } elseif ($trimmedLine.StartsWith("WARN:", "CurrentCultureIgnoreCase")) {
             $formattedContent += "<span class='status-warn'>$encodedLine</span>`n"
-        } elseif ($line -match 'PASS') {
-            $formattedContent += "<span class='status-pass'>$encodedLine</span>`n"
-        } elseif ($line -match 'INFO') {
-            $formattedContent += "<span class='status-info'>$encodedLine</span>`n"
-        } else {
-            $formattedContent += "$encodedLine`n"
+        } elseif ($trimmedLine.StartsWith("INFO:", "CurrentCultureIgnoreCase")) {
+            $formattedContent += "<span class='detail-info'>$encodedLine</span>`n" # Blue
+        } elseif ($trimmedLine.StartsWith("Detailed information for", "CurrentCultureIgnoreCase")) {
+            $formattedContent += "<span class='detail-detail'>$encodedLine</span>`n" # Light Blue
+        }
+        # Fallback to original generic keyword highlighting
+        else {
+            if ($line -match 'FAIL') {
+                $formattedContent += "<span class='status-fail'>$encodedLine</span>`n"
+            } elseif ($line -match 'Error') {
+                $formattedContent += "<span class='status-error'>$encodedLine</span>`n"
+            } elseif ($line -match 'Warning') {
+                $formattedContent += "<span class='status-warn'>$encodedLine</span>`n"
+            } elseif ($line -match 'PASS') {
+                $formattedContent += "<span class='status-pass'>$encodedLine</span>`n"
+            } elseif ($line -match 'INFO') {
+                $formattedContent += "<span class='detail-info'>$encodedLine</span>`n" # Blue
+            } else {
+                $formattedContent += "$encodedLine`n"
+            }
         }
     }
     $htmlBody += "<pre>$formattedContent</pre>"
 }
 
 $htmlFoot = @"
-    <footer>Report generated by NCC_clusters.ps1 v1.10</footer>
+    <footer>Report generated by NCC_clusters.ps1 v1.11</footer>
 </body>
 </html>
 "@
