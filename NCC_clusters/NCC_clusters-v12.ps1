@@ -240,7 +240,7 @@ foreach ($item in $summaryData) {
             $formattedContent += "<span class='status-warn'>$encodedLine</span>`n"
         } elseif ($line -match 'INFO:') {
             $formattedContent += "<span class='status-info-blue'>$encodedLine</span>`n"
-        } elseif ($line -match 'Detail information for') {
+        } elseif ($line -match 'Detailed information for') {
             $formattedContent += "<span class='status-detail-header'>$encodedLine</span>`n"
         } elseif ($line -match 'PASS') {
             $formattedContent += "<span class='status-pass'>$encodedLine</span>`n"
