@@ -1,16 +1,10 @@
-# NCC_clusters.ps1 v1.9  Sep 23, 2025
+# NCC_clusters.ps1 v1.10  Sep 23, 2025
 # This script runs full NCC checks on all clusters in clusters.txt
 #
-# v1.1 - Modified to filter output and show only the lines after the final separator.
-# v1.2 - Creates a separate output file per cluster in a timestamped directory.
-#      - Removes the final "Plugin output written to..." line from the summary.
-# v1.3 - Added logic to remove ANSI control/color codes from the output.
-# v1.4 - Added HTML report generation to consolidate all cluster outputs into a single webpage.
-# v1.5 - Added a summary table to the HTML report with overall status for each cluster.
-# v1.6 - Sorts the summary table and details by status (FAIL > WARN > PASS).
-# v1.7 - Added assembly loading for System.Web to support PowerShell 5.1.
-# v1.9 - Reworked HTML summary to show a pipe-separated, color-coded breakdown.
-#      - Added specific color for 'Error' status (Magenta) and updated 'Info' (Blue).
+# v1.7 - Base version with PowerShell 5.1 compatibility.
+# v1.10 - Reworked HTML summary to parse the 'State | Count' table.
+#       - Displays a detailed, pipe-separated, color-coded breakdown in the summary.
+#       - Pass:Green, Info:Cyan, Warning:Yellow, Fail:Red, Error:Magenta.
 #
 # This is not a Nutanix Supported script. Do not use to run any config change or disruptive commnads.
 # Usage: .\NCC_clusters.ps1
@@ -112,16 +106,18 @@ $htmlHead = @"
         h1 { color: #003a70; border-bottom: 2px solid #00b1e7; padding-bottom: 10px; }
         h2 { background-color: #003a70; color: white; padding: 12px; border-radius: 5px; margin-top: 40px; }
         pre { background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; line-height: 1.5; }
+        /* --- MODIFICATION: Color definitions as requested --- */
         .status-pass { color: #28a745; font-weight: bold; } /* Green */
+        .status-info { color: #0dcaf0; font-weight: bold; } /* Cyan */
         .status-warn { color: #ffc107; font-weight: bold; } /* Yellow */
-        .status-info { color: #0d6efd; font-weight: bold; } /* Blue */
         .status-fail { color: #dc3545; font-weight: bold; } /* Red */
         .status-error { color: #d63384; font-weight: bold; } /* Magenta */
         .summary-table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .summary-table th, .summary-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         .summary-table th { background-color: #e9ecef; color: #333; }
         .summary-table tr:nth-child(even) { background-color: #f8f9fa; }
-        .summary-table td { vertical-align: top; font-family: 'Consolas', 'Monaco', monospace; }
+        /* --- MODIFICATION: Use monospaced font for alignment and set vertical alignment --- */
+        .summary-table td { vertical-align: top; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; }
         .summary-table td a { color: #007bff; text-decoration: none; font-weight: bold; }
         .summary-table td a:hover { text-decoration: underline; }
         footer { text-align: center; margin-top: 40px; font-size: 0.9em; color: #888; }
@@ -142,10 +138,10 @@ foreach ($reportFile in $reportFiles) {
     $fileContentRaw = $fileContentLines -join "`n"
 
     # Determine overall status for sorting priority (FAIL/ERROR highest)
-    $statusPriority = 4
-    if ($fileContentRaw -match 'FAIL|ERROR') {
+    $statusPriority = 4 # Default priority for INFO/PASS
+    if ($fileContentRaw -match 'FAIL|Error') { # Case sensitive 'Error' from NCC table
         $statusPriority = 1
-    } elseif ($fileContentRaw -match 'WARN') {
+    } elseif ($fileContentRaw -match 'Warning') { # Case sensitive 'Warning'
         $statusPriority = 2
     } elseif ($fileContentRaw -match 'PASS') {
         $statusPriority = 3
@@ -175,6 +171,7 @@ foreach ($reportFile in $reportFiles) {
 
     # --- MODIFICATION: Build the new pipe-separated, color-coded HTML string ---
     $htmlParts = @()
+    # Iterate through the ordered dictionary to maintain consistent order
     foreach ($statusName in $statusCounts.Keys) {
         $count = $statusCounts[$statusName]
         if ($count -gt 0) {
@@ -193,7 +190,7 @@ foreach ($reportFile in $reportFiles) {
     $detailedStatusHtml = if ($htmlParts.Count -gt 0) {
         '|' + ($htmlParts -join '|') + '|'
     } else {
-        "Summary not found"
+        "Summary table not found or was empty."
     }
 
     $summaryData += [PSCustomObject]@{
@@ -237,12 +234,12 @@ foreach ($item in $summaryData) {
     $formattedContent = ""
     foreach ($line in $fileContent) {
         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
-        # --- MODIFICATION: Separate Fail and Error for distinct coloring ---
+        # Separate Fail and Error for distinct coloring in the detailed view
         if ($line -match 'FAIL') {
             $formattedContent += "<span class='status-fail'>$encodedLine</span>`n"
-        } elseif ($line -match 'ERROR') {
+        } elseif ($line -match 'Error') { # Case sensitive to match table output
             $formattedContent += "<span class='status-error'>$encodedLine</span>`n"
-        } elseif ($line -match 'WARN') {
+        } elseif ($line -match 'Warning') { # Case sensitive
             $formattedContent += "<span class='status-warn'>$encodedLine</span>`n"
         } elseif ($line -match 'PASS') {
             $formattedContent += "<span class='status-pass'>$encodedLine</span>`n"
@@ -256,7 +253,7 @@ foreach ($item in $summaryData) {
 }
 
 $htmlFoot = @"
-    <footer>Report generated by NCC_clusters.ps1 v1.9</footer>
+    <footer>Report generated by NCC_clusters.ps1 v1.10</footer>
 </body>
 </html>
 "@
