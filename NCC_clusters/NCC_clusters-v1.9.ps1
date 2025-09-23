@@ -1,5 +1,6 @@
-# NCC_clusters.ps1 v1.8  Sept 22, 2025
+# NCC_clusters.ps1 v1.9  Sep 23, 2025
 # This script runs full NCC checks on all clusters in clusters.txt
+#
 # v1.1 - Modified to filter output and show only the lines after the final separator.
 # v1.2 - Creates a separate output file per cluster in a timestamped directory.
 #      - Removes the final "Plugin output written to..." line from the summary.
@@ -8,7 +9,9 @@
 # v1.5 - Added a summary table to the HTML report with overall status for each cluster.
 # v1.6 - Sorts the summary table and details by status (FAIL > WARN > PASS).
 # v1.7 - Added assembly loading for System.Web to support PowerShell 5.1.
-# v1.8 - Parses and displays a detailed status count breakdown in the HTML summary table.
+# v1.9 - Reworked HTML summary to show a pipe-separated, color-coded breakdown.
+#      - Added specific color for 'Error' status (Magenta) and updated 'Info' (Blue).
+#
 # This is not a Nutanix Supported script. Do not use to run any config change or disruptive commnads.
 # Usage: .\NCC_clusters.ps1
 
@@ -109,15 +112,16 @@ $htmlHead = @"
         h1 { color: #003a70; border-bottom: 2px solid #00b1e7; padding-bottom: 10px; }
         h2 { background-color: #003a70; color: white; padding: 12px; border-radius: 5px; margin-top: 40px; }
         pre { background-color: #fff; border: 1px solid #ddd; border-radius: 5px; padding: 15px; white-space: pre-wrap; word-wrap: break-word; font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; line-height: 1.5; }
-        .status-pass { color: #28a745; font-weight: bold; }
-        .status-fail { color: #dc3545; font-weight: bold; }
-        .status-warn { color: #ffc107; font-weight: bold; }
-        .status-info { color: #17a2b8; }
+        .status-pass { color: #28a745; font-weight: bold; } /* Green */
+        .status-warn { color: #ffc107; font-weight: bold; } /* Yellow */
+        .status-info { color: #0d6efd; font-weight: bold; } /* Blue */
+        .status-fail { color: #dc3545; font-weight: bold; } /* Red */
+        .status-error { color: #d63384; font-weight: bold; } /* Magenta */
         .summary-table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 40px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .summary-table th, .summary-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
         .summary-table th { background-color: #e9ecef; color: #333; }
         .summary-table tr:nth-child(even) { background-color: #f8f9fa; }
-        .summary-table td { vertical-align: top; }
+        .summary-table td { vertical-align: top; font-family: 'Consolas', 'Monaco', monospace; }
         .summary-table td a { color: #007bff; text-decoration: none; font-weight: bold; }
         .summary-table td a:hover { text-decoration: underline; }
         footer { text-align: center; margin-top: 40px; font-size: 0.9em; color: #888; }
@@ -134,12 +138,12 @@ $reportFiles = Get-ChildItem -Path $outputDir -Filter "*-NCC_Report.txt"
 
 foreach ($reportFile in $reportFiles) {
     $clusterName = ($reportFile.BaseName -split '-NCC_Report')[0]
-    $fileContentRaw = Get-Content -Path $reportFile.FullName -Raw
     $fileContentLines = Get-Content -Path $reportFile.FullName
+    $fileContentRaw = $fileContentLines -join "`n"
 
-    # Determine overall status for sorting priority
+    # Determine overall status for sorting priority (FAIL/ERROR highest)
     $statusPriority = 4
-    if ($fileContentRaw -match 'FAIL' -or $fileContentRaw -match 'ERROR') {
+    if ($fileContentRaw -match 'FAIL|ERROR') {
         $statusPriority = 1
     } elseif ($fileContentRaw -match 'WARN') {
         $statusPriority = 2
@@ -147,58 +151,60 @@ foreach ($reportFile in $reportFiles) {
         $statusPriority = 3
     }
 
-    # --- MODIFICATION: Parse the detailed status counts from the report file ---
-    $statusSummaries = @()
+    # --- MODIFICATION: Parse detailed status counts into an ordered dictionary ---
+    $statusCounts = [ordered]@{
+        'Fail' = 0; 'Error' = 0; 'Warning' = 0; 'Pass' = 0; 'Info' = 0
+    }
     $foundStatusTable = $false
     foreach ($line in $fileContentLines) {
         if (-not $foundStatusTable -and $line -match 'State\s*\|\s*Count') {
             $foundStatusTable = $true
-            continue # Skip header and start processing from the next line
+            continue # Start processing from the next line
         }
-
         if ($foundStatusTable) {
             if ($line.Trim().StartsWith('+--')) { break } # Stop at the end of the table
-
             $parts = $line.Split('|', [System.StringSplitOptions]::RemoveEmptyEntries)
             if ($parts.Count -ge 2) {
                 $statusName = $parts[0].Trim()
-                $statusCount = $parts[1].Trim()
-
-                if (($statusCount -as [int]) -gt 0 -and ('Pass', 'Info', 'Fail', 'Warn', 'Error' -contains $statusName)) {
-                    $statusSummaries += @{ Name = $statusName; Count = $statusCount }
+                if ($statusCounts.Contains($statusName)) {
+                    $statusCounts[$statusName] = $parts[1].Trim() -as [int]
                 }
             }
         }
     }
 
-    # --- MODIFICATION: Build a color-coded HTML string from the parsed statuses ---
-    $detailedStatusHtml = ""
-    if ($statusSummaries.Count -gt 0) {
-        $htmlParts = foreach ($summary in $statusSummaries) {
-            $className = 'status-info' # Default class
-            switch ($summary.Name) {
-                'Fail'  { $className = 'status-fail'; break }
-                'Error' { $className = 'status-fail'; break }
-                'Warn'  { $className = 'status-warn'; break }
-                'Pass'  { $className = 'status-pass'; break }
+    # --- MODIFICATION: Build the new pipe-separated, color-coded HTML string ---
+    $htmlParts = @()
+    foreach ($statusName in $statusCounts.Keys) {
+        $count = $statusCounts[$statusName]
+        if ($count -gt 0) {
+            $className = ''
+            switch ($statusName) {
+                'Fail'    { $className = 'status-fail'; break }
+                'Error'   { $className = 'status-error'; break }
+                'Warning' { $className = 'status-warn'; break }
+                'Pass'    { $className = 'status-pass'; break }
+                'Info'    { $className = 'status-info'; break }
             }
-            "<span class='$className'>$($summary.Name) $($summary.Count)</span>"
+            # Add spaces for padding inside the pipes
+            $htmlParts += " <span class='$className'>$statusName $count</span> "
         }
-        $detailedStatusHtml = $htmlParts -join ', '
+    }
+    $detailedStatusHtml = if ($htmlParts.Count -gt 0) {
+        '|' + ($htmlParts -join '|') + '|'
     } else {
-        # Fallback if parsing fails or table is empty
-        $detailedStatusHtml = "Summary not found"
+        "Summary not found"
     }
 
     $summaryData += [PSCustomObject]@{
         ClusterName    = $clusterName
         ReportFile     = $reportFile
         StatusPriority = $statusPriority
-        DetailedStatus = $detailedStatusHtml # New property for our detailed string
+        DetailedStatus = $detailedStatusHtml # The new, formatted HTML string
     }
 }
 
-# Sort the data by priority (FAIL > WARN > PASS) and then by name
+# Sort the data by priority and then by name
 $summaryData = $summaryData | Sort-Object StatusPriority, ClusterName
 
 # Build the HTML summary table
@@ -217,14 +223,12 @@ $summaryTableHtml = @"
 foreach ($item in $summaryData) {
     $summaryTableHtml += "<tr>"
     $summaryTableHtml += "<td><a href='#cluster-$($item.ClusterName)'>$($item.ClusterName)</a></td>"
-    # --- MODIFICATION: Use the new detailed status property ---
-    $summaryTableHtml += "<td>$($item.DetailedStatus)</td>"
+    $summaryTableHtml += "<td>$($item.DetailedStatus)</td>" # Use the new pipe-formatted string
     $summaryTableHtml += "</tr>`n"
 }
-
 $summaryTableHtml += "</tbody></table>"
 
-# Build the detailed HTML body from the sorted data
+# Build the detailed HTML body
 $htmlBody = ""
 foreach ($item in $summaryData) {
     $htmlBody += "<h2 id='cluster-$($item.ClusterName)'>Cluster: $($item.ClusterName)</h2>"
@@ -233,8 +237,11 @@ foreach ($item in $summaryData) {
     $formattedContent = ""
     foreach ($line in $fileContent) {
         $encodedLine = [System.Web.HttpUtility]::HtmlEncode($line)
-        if ($line -match 'FAIL|ERROR') {
+        # --- MODIFICATION: Separate Fail and Error for distinct coloring ---
+        if ($line -match 'FAIL') {
             $formattedContent += "<span class='status-fail'>$encodedLine</span>`n"
+        } elseif ($line -match 'ERROR') {
+            $formattedContent += "<span class='status-error'>$encodedLine</span>`n"
         } elseif ($line -match 'WARN') {
             $formattedContent += "<span class='status-warn'>$encodedLine</span>`n"
         } elseif ($line -match 'PASS') {
@@ -249,7 +256,7 @@ foreach ($item in $summaryData) {
 }
 
 $htmlFoot = @"
-    <footer>Report generated by NCC_clusters.ps1 v1.8</footer>
+    <footer>Report generated by NCC_clusters.ps1 v1.9</footer>
 </body>
 </html>
 "@
