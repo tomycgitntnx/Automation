@@ -4,15 +4,15 @@
     using the REST API v4.1 and exports them to a CSV file.
 
 .DESCRIPTION
-    This script authenticates to the Prism Central v4 API, sends a request to the
-    monitoring endpoint to fetch all alerts that are not resolved, handles API
-    pagination to ensure all records are retrieved, and then exports the relevant
-    details into a CSV file for easy analysis in Excel.
+    This script authenticates to Prism Central, sends as a GET request to the
+    /api/monitoring/v4.1/serviceability/alerts endpoint with an OData filter
+    to fetch only unresolved alerts, handles API pagination using page and limit
+    parameters, and then exports the relevant details into a CSV file.
 
 .NOTES
     Author: Tomy Carrasco, Nutanix
     Date: 2025-09-30
-    Version: 1.0
+    Version: 2.0
     PowerShell Version: 5.1+
 
 .REQUIREMENTS
@@ -36,7 +36,6 @@ Write-Host "Starting script..." -ForegroundColor Cyan
 
 # For environments with self-signed certificates, this will bypass SSL certificate validation.
 # Remove or comment out this section if you have a valid CA-signed certificate on Prism Central.
-# This code snippet is derived from internal Nutanix automation examples.<cite id="doc_15"/>
 try {
     Add-Type @"
     using System.Net;
@@ -51,92 +50,86 @@ try {
     Write-Host "SSL certificate validation is being bypassed." -ForegroundColor Yellow
 }
 catch {
-    Write-Warning "Could not load the custom SSL certificate policy. The script will continue and rely on -SkipCertificateCheck."
+    Write-Warning "Could not load the custom SSL certificate policy. The script will continue and rely on the -SkipCertificateCheck parameter."
 }
 
 # Enforce TLS 1.2 for modern security standards
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 
 # --- Authentication ---
-# Create the Basic Authentication header required by the API.<cite id="doc_15"/><cite id="doc_17"/>
+# Create the Basic Authentication header required by the API.
 $encodedAuth = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("${username}:${password}"))
 $headers = @{
     "Authorization" = "Basic $encodedAuth"
     "Content-Type"  = "application/json"
 }
 
-# --- API Endpoint and Filter Definition ---
-# The v4.1 API uses a POST request to a /list endpoint to allow for complex filtering.<cite id="doc_0"/>
-# The filter below targets alerts where the 'isResolved' property is 'false'.
-# For more filter options, refer to the official Nutanix Developer Portal for the Monitoring API v4.1.<cite id="doc_0"/>
-$apiUrl = "https://{0}:9440/api/monitoring/v4.1/alerts/list" -f $pcIp
-$requestBody = @{
-    filterCriteria = "is_resolved==false"
-    # The page size can be adjusted. 500 is the maximum allowed.
-    pageSize       = 500 
-}
-
 # --- Data Retrieval with Pagination Handling ---
 $allAlerts = [System.Collections.Generic.List[PSObject]]::new()
-$page = 1
-$nextCursor = $null
+$page = 0
+$limit = 50 # API page size limit, 50 is a common and safe value.
+$totalAvailable = -1 # Using -1 to indicate it has not been set yet.
 
 Write-Host "Connecting to $pcIp and fetching unresolved alerts..." -ForegroundColor Cyan
 
 do {
-    # If there is a cursor from the previous page, add it to the request body
-    if ($null -ne $nextCursor) {
-        $requestBody.pageReference = @{
-            cursor = $nextCursor
-        }
-    }
-
-    $bodyAsJson = $requestBody | ConvertTo-Json
+    # The v4.1 serviceability API uses GET with OData filters and page/limit for pagination.
+    # Note: OData filters are case-sensitive and use 'eq' for equality. The field name is 'isResolved'.
+    $apiUrl = "https://{0}:9440/api/monitoring/v4.1/serviceability/alerts?`$filter=isResolved eq false&`$limit={1}&`$page={2}" -f $pcIp, $limit, $page
 
     try {
-        Write-Host "Fetching page $page..."
-        $response = Invoke-RestMethod -Uri $apiUrl -Method Post -Headers $headers -Body $bodyAsJson -ErrorAction Stop
+        Write-Host "Fetching page $($page + 1)..."
+        $response = Invoke-RestMethod -Uri $apiUrl -Method Get -Headers $headers -ErrorAction Stop -SkipCertificateCheck
 
         if ($null -ne $response.data -and $response.data.Count -gt 0) {
             $allAlerts.AddRange($response.data)
             Write-Host "  - Found $($response.data.Count) alerts on this page."
         } else {
-             Write-Host "  - No alerts found on this page."
+             Write-Host "  - No alerts found on this page. Stopping retrieval."
+             # Break the loop if a page comes back with no data for any reason.
+             break
         }
 
-        # The v4 API provides a 'nextCursor' for pagination. If it's null, we've reached the last page.
-        $nextCursor = $response.metadata.nextCursor
+        # On the first call (page 0), get the total number of results from the metadata.
+        if ($page -eq 0) {
+            $totalAvailable = $response.metadata.totalAvailableResults
+            # If totalAvailable is 0, the loop condition will fail and we will exit gracefully.
+            Write-Host "Total unresolved alerts to fetch: $totalAvailable"
+        }
+
         $page++
 
     } catch {
         Write-Error "An error occurred while calling the Nutanix API."
+        Write-Error "URL: $apiUrl"
         Write-Error "Status Code: $($_.Exception.Response.StatusCode.value__)"
         Write-Error "Response: $($_.Exception.Response.GetResponseStream() | New-Object System.IO.StreamReader | ForEach-Object { $_.ReadToEnd() })"
         # Stop the script on API failure
         return
     }
 
-} while ($null -ne $nextCursor)
+# Continue looping as long as the number of alerts we have collected is less than the total reported by the API.
+} while ($allAlerts.Count -lt $totalAvailable)
 
 # --- Data Processing and Export ---
 if ($allAlerts.Count -gt 0) {
-    Write-Host "Total unresolved alerts found: $($allAlerts.Count)." -ForegroundColor Green
+    Write-Host "Finished fetching. Total unresolved alerts found: $($allAlerts.Count)." -ForegroundColor Green
     Write-Host "Processing and exporting data to CSV..."
 
     # Select and flatten the desired properties for a clean CSV output.
-    # The properties of an alert object can be nested. We use calculated properties to extract them.
-    $exportData = $allAlerts | Select-Object @{N = 'Title'; E = { $_.title } },
+    # The property names below are based on the v4.1 serviceability/alerts API response structure.
+    $exportData = $allAlerts | Select-Object @{N = 'Id'; E = { $_.extId } },
+        @{N = 'Title'; E = { $_.title } },
         @{N = 'Severity'; E = { $_.severity } },
         @{N = 'CreatedTime'; E = { $_.creationTime } },
-        @{N = 'LastOccurred'; E = { $_.lastOccurrenceTime } },
-        @{N = 'ImpactType'; E = { $_.impactType } },
-        @{N = 'SourceEntityName'; E = { $_.context.originEntity.name } },
-        @{N = 'SourceEntityType'; E = { $_.context.originEntity.type } },
-        @{N = 'ClusterName'; E = { $_.context.cluster.name } },
-        @{N = 'ClusterUuid'; E = { $_.context.cluster.uuid } },
+        @{N = 'LastUpdated'; E = { $_.lastUpdatedTime } },
+        @{N = 'ImpactTypes'; E = { $_.impactTypes -join '; ' } },
+        @{N = 'SourceEntityName'; E = { $_.sourceEntity.name } },
+        @{N = 'SourceEntityType'; E = { $_.sourceEntity.type } },
+        @{N = 'ClusterName'; E = { $_.clusterName } },
+        @{N = 'ClusterUuid'; E = { $_.clusterUUID } },
         @{N = 'IsAcknowledged'; E = { $_.isAcknowledged } },
-        @{N = 'IsResolved'; E = { $_.isResolved } },
-        @{N = 'Id'; E = { $_.extId } }
+        @{N = 'IsResolved'; E = { $_.isResolved } }
 
     # Export the processed data to a CSV file that can be opened by Excel.
     try {
