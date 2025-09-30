@@ -12,7 +12,7 @@
 .NOTES
     Author: Tomy Carrasco, Nutanix
     Date: 2025-09-30
-    Version: 3.0
+    Version: 4.0
     PowerShell Version: 5.1+
 
 .REQUIREMENTS
@@ -35,7 +35,7 @@ $outputFile = "C:\temp\Nutanix_Unresolved_Alerts.csv" # Full path for the output
 Write-Host "Starting script..." -ForegroundColor Cyan
 
 # For environments with self-signed certificates, this will bypass SSL certificate validation.
-# Remove or comment out this section if you have a valid CA-signed certificate on Prism Central.
+# This is the correct method for PowerShell 5.1.
 try {
     Add-Type @"
     using System.Net;
@@ -50,7 +50,8 @@ try {
     Write-Host "SSL certificate validation is being bypassed." -ForegroundColor Yellow
 }
 catch {
-    Write-Warning "Could not load the custom SSL certificate policy. Script will rely on Invoke-RestMethod's -SkipCertificateCheck."
+    Write-Error "Could not load the custom SSL certificate policy. The script may fail on systems with self-signed certificates."
+    return
 }
 
 # Enforce TLS 1.2 for modern security standards
@@ -80,8 +81,9 @@ do {
 
     try {
         Write-Host "Fetching page $page (alerts $($skip + 1) - $($skip + $top))..."
-        # Using -SkipCertificateCheck for broader compatibility with lab environments.
-        $response = Invoke-RestMethod -Uri $apiUrl -Method Get -Headers $headers -ErrorAction Stop -SkipCertificateCheck
+        # The -SkipCertificateCheck parameter has been removed as it is not supported in PowerShell 5.1.
+        # The ServicePointManager policy set earlier handles certificate validation.
+        $response = Invoke-RestMethod -Uri $apiUrl -Method Get -Headers $headers -ErrorAction Stop
 
         if ($null -ne $response.data -and $response.data.Count -gt 0) {
             $allAlerts.AddRange($response.data)
@@ -121,7 +123,7 @@ do {
     }
 
 # Continue looping as long as we have collected fewer alerts than the total reported by the API.
-} while ($allAlerts.Count -lt $totalCount)
+} while ($totalCount -ne -1 -and $allAlerts.Count -lt $totalCount)
 
 # --- Data Processing and Export ---
 if ($allAlerts.Count -gt 0) {
