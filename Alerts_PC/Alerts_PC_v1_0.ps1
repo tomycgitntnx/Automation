@@ -4,15 +4,15 @@
     using the REST API v4.1 and exports them to a CSV file.
 
 .DESCRIPTION
-    This script authenticates to Prism Central, sends as a GET request to the
-    /api/monitoring/v4.1/serviceability/alerts endpoint with an OData filter
-    to fetch only unresolved alerts, handles API pagination using page and limit
-    parameters, and then exports the relevant details into a CSV file.
+    This script authenticates to Prism Central, sends a GET request to the
+    /api/monitoring/v4.1/alerts endpoint with an OData filter to fetch only
+    unresolved alerts, handles API pagination using $skip and $top parameters, 
+    and then exports the relevant details into a CSV file.
 
 .NOTES
     Author: Tomy Carrasco, Nutanix
     Date: 2025-09-30
-    Version: 2.0
+    Version: 3.0
     PowerShell Version: 5.1+
 
 .REQUIREMENTS
@@ -50,7 +50,7 @@ try {
     Write-Host "SSL certificate validation is being bypassed." -ForegroundColor Yellow
 }
 catch {
-    Write-Warning "Could not load the custom SSL certificate policy. The script will continue and rely on the -SkipCertificateCheck parameter."
+    Write-Warning "Could not load the custom SSL certificate policy. Script will rely on Invoke-RestMethod's -SkipCertificateCheck."
 }
 
 # Enforce TLS 1.2 for modern security standards
@@ -66,72 +66,83 @@ $headers = @{
 
 # --- Data Retrieval with Pagination Handling ---
 $allAlerts = [System.Collections.Generic.List[PSObject]]::new()
-$page = 0
-$limit = 50 # API page size limit, 50 is a common and safe value.
-$totalAvailable = -1 # Using -1 to indicate it has not been set yet.
+$skip = 0
+$top = 100 # Page size. Can be up to 500.
+$totalCount = -1 # Using -1 to indicate it has not been set yet.
+$page = 1
 
 Write-Host "Connecting to $pcIp and fetching unresolved alerts..." -ForegroundColor Cyan
 
 do {
-    # The v4.1 serviceability API uses GET with OData filters and page/limit for pagination.
-    # Note: OData filters are case-sensitive and use 'eq' for equality. The field name is 'isResolved'.
-    $apiUrl = "https://{0}:9440/api/monitoring/v4.1/serviceability/alerts?`$filter=isResolved eq false&`$limit={1}&`$page={2}" -f $pcIp, $limit, $page
+    # The v4.1 monitoring API uses GET with OData filters and $skip/$top for pagination.
+    # Note: OData parameter names ($filter, $top, $skip) need a backtick ` to be escaped in the string.
+    $apiUrl = "https://{0}:9440/api/monitoring/v4.1/alerts?`$filter=isResolved eq false&`$top={1}&`$skip={2}" -f $pcIp, $top, $skip
 
     try {
-        Write-Host "Fetching page $($page + 1)..."
+        Write-Host "Fetching page $page (alerts $($skip + 1) - $($skip + $top))..."
+        # Using -SkipCertificateCheck for broader compatibility with lab environments.
         $response = Invoke-RestMethod -Uri $apiUrl -Method Get -Headers $headers -ErrorAction Stop -SkipCertificateCheck
 
         if ($null -ne $response.data -and $response.data.Count -gt 0) {
             $allAlerts.AddRange($response.data)
             Write-Host "  - Found $($response.data.Count) alerts on this page."
         } else {
-             Write-Host "  - No alerts found on this page. Stopping retrieval."
-             # Break the loop if a page comes back with no data for any reason.
+             Write-Host "  - No more alerts found. Stopping retrieval."
              break
         }
 
-        # On the first call (page 0), get the total number of results from the metadata.
-        if ($page -eq 0) {
-            $totalAvailable = $response.metadata.totalAvailableResults
-            # If totalAvailable is 0, the loop condition will fail and we will exit gracefully.
-            Write-Host "Total unresolved alerts to fetch: $totalAvailable"
+        # On the first call, get the total number of results from the metadata.
+        if ($totalCount -eq -1) {
+            $totalCount = $response.metadata.totalCount
+            if ($totalCount -eq 0) {
+                # Exit loop if there are no alerts to fetch at all.
+                break
+            }
+            Write-Host "Total unresolved alerts to fetch: $totalCount"
         }
 
+        $skip += $top
         $page++
 
     } catch {
         Write-Error "An error occurred while calling the Nutanix API."
         Write-Error "URL: $apiUrl"
-        Write-Error "Status Code: $($_.Exception.Response.StatusCode.value__)"
-        Write-Error "Response: $($_.Exception.Response.GetResponseStream() | New-Object System.IO.StreamReader | ForEach-Object { $_.ReadToEnd() })"
+        # Robust error handling: Check if a response object exists before trying to access its properties.
+        if ($_.Exception.Response) {
+            Write-Error "Status Code: $($_.Exception.Response.StatusCode.value__)"
+            $errorResponse = $_.Exception.Response.GetResponseStream() | New-Object System.IO.StreamReader | ForEach-Object { $_.ReadToEnd() }
+            Write-Error "Response: $errorResponse"
+        } else {
+            Write-Error "No response received from the server. This could be a network, DNS, or TLS/SSL issue."
+            Write-Error "Underlying Exception: $($_.Exception.Message)"
+        }
         # Stop the script on API failure
         return
     }
 
-# Continue looping as long as the number of alerts we have collected is less than the total reported by the API.
-} while ($allAlerts.Count -lt $totalAvailable)
+# Continue looping as long as we have collected fewer alerts than the total reported by the API.
+} while ($allAlerts.Count -lt $totalCount)
 
 # --- Data Processing and Export ---
 if ($allAlerts.Count -gt 0) {
     Write-Host "Finished fetching. Total unresolved alerts found: $($allAlerts.Count)." -ForegroundColor Green
     Write-Host "Processing and exporting data to CSV..."
 
-    # Select and flatten the desired properties for a clean CSV output.
-    # The property names below are based on the v4.1 serviceability/alerts API response structure.
+    # Select and flatten properties for a clean CSV output, matching the v4.1 /alerts endpoint structure.
     $exportData = $allAlerts | Select-Object @{N = 'Id'; E = { $_.extId } },
         @{N = 'Title'; E = { $_.title } },
         @{N = 'Severity'; E = { $_.severity } },
         @{N = 'CreatedTime'; E = { $_.creationTime } },
-        @{N = 'LastUpdated'; E = { $_.lastUpdatedTime } },
-        @{N = 'ImpactTypes'; E = { $_.impactTypes -join '; ' } },
-        @{N = 'SourceEntityName'; E = { $_.sourceEntity.name } },
-        @{N = 'SourceEntityType'; E = { $_.sourceEntity.type } },
-        @{N = 'ClusterName'; E = { $_.clusterName } },
-        @{N = 'ClusterUuid'; E = { $_.clusterUUID } },
+        @{N = 'LastOccurred'; E = { $_.lastOccurrenceTime } },
+        @{N = 'ImpactType'; E = { $_.impactType } },
+        @{N = 'SourceEntityName'; E = { $_.context.originEntity.name } },
+        @{N = 'SourceEntityType'; E = { $_.context.originEntity.type } },
+        @{N = 'ClusterName'; E = { $_.context.cluster.name } },
+        @{N = 'ClusterUuid'; E = { $_.context.cluster.uuid } },
         @{N = 'IsAcknowledged'; E = { $_.isAcknowledged } },
         @{N = 'IsResolved'; E = { $_.isResolved } }
 
-    # Export the processed data to a CSV file that can be opened by Excel.
+    # Export the processed data to a CSV file.
     try {
         $exportData | Export-Csv -Path $outputFile -NoTypeInformation -Encoding UTF8 -ErrorAction Stop
         Write-Host "Successfully exported unresolved alerts to: $outputFile" -ForegroundColor Green
@@ -145,5 +156,4 @@ if ($allAlerts.Count -gt 0) {
 }
 
 Write-Host "Script finished." -ForegroundColor Cyan
-
 #endregion
