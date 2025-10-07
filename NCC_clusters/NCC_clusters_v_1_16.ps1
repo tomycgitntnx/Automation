@@ -1,13 +1,11 @@
-# NCC_clusters.ps1 v1.15  Oct 07, 2025
+# NCC_clusters.ps1 v1.16  Oct 07, 2025
 # This script runs full NCC checks on all clusters in clusters.txt
 #
-# v1.13 - Corrected a typo in the string match for 'Detailed information for'.
 # v1.14 - Modified summary to display all status counters, even if zero.
-#       - Set specific display order for counters: Fail, Warning, Info, Error, Pass.
-#       - Zero-count statuses are now colored gray for better readability.
+#       - Set specific display order for counters and colored zero-count statuses gray.
 # v1.15 - Implemented collapsible cluster sections for better navigation.
 #       - Added 'Back to Summary' links in each cluster section.
-#       - Updated HTML/CSS for a cleaner, more interactive report.
+# v1.16 - Added a 'Link to this Report' in the top-right corner for easy access.
 #
 # This is not a Nutanix Supported script. Do not use to run any config change or disruptive commnads.
 # Usage: .\NCC_clusters.ps1
@@ -91,7 +89,8 @@ foreach ($namecluster in $clusters) {
 Write-Host "All checks complete. Generating HTML report..." -ForegroundColor Yellow
 
 # --- HTML Report Generation ---
-$htmlReportPath = Join-Path -Path $outputDir -ChildPath "NCC_Summary_Report.html"
+$htmlReportFileName = "NCC_Summary_Report.html"
+$htmlReportPath = Join-Path -Path $outputDir -ChildPath $htmlReportFileName
 
 # Add System.Web assembly for PS 5.1 compatibility
 Add-Type -AssemblyName System.Web
@@ -125,31 +124,21 @@ $htmlHead = @"
         .summary-table td a { color: #007bff; text-decoration: none; font-weight: bold; }
         .summary-table td a:hover { text-decoration: underline; }
         footer { text-align: center; margin-top: 40px; font-size: 0.9em; color: #888; }
-        /* --- MODIFICATION: Styles for collapsible sections --- */
         details { margin-top: 40px; }
-        summary {
-            background-color: #003a70;
-            color: white;
-            padding: 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        .back-to-summary {
-            float: right;
-            font-size: 0.8rem;
-            font-weight: normal;
-            color: #dbeaff;
-            text-decoration: none;
-            margin-top: 2px;
-        }
-        .back-to-summary:hover {
-            text-decoration: underline;
-        }
+        summary { background-color: #003a70; color: white; padding: 12px; border-radius: 5px; cursor: pointer; font-size: 1.2rem; font-weight: bold; }
+        .back-to-summary { float: right; font-size: 0.8rem; font-weight: normal; color: #dbeaff; text-decoration: none; margin-top: 2px; }
+        .back-to-summary:hover { text-decoration: underline; }
+        /* --- MODIFICATION: Style for the top-right report link --- */
+        .report-link-container { position: absolute; top: 25px; right: 25px; font-size: 0.9em; }
+        .report-link-container a { color: #007bff; text-decoration: none; font-weight: bold; }
+        .report-link-container a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
+    <!-- --- MODIFICATION: Added link to the report file itself --- -->
+    <div class="report-link-container">
+        <a href="$htmlReportFileName">[ Link to this Report ]</a>
+    </div>
     <h1>Nutanix NCC Summary Report</h1>
     <p>Generated on: $dateStamp</p>
 "@
@@ -202,26 +191,18 @@ foreach ($reportFile in $reportFiles) {
     $htmlParts = @()
     foreach ($statusName in $statusCounts.Keys) {
         $count = $statusCounts[$statusName]
-        $className = ''
-
-        if ($count -gt 0) {
+        $className = if ($count -gt 0) {
             switch ($statusName) {
-                'Fail'    { $className = 'status-fail'; break }
-                'Warning' { $className = 'status-warn'; break }
-                'Info'    { $className = 'status-info'; break }
-                'Error'   { $className = 'status-error'; break }
-                'Pass'    { $className = 'status-pass'; break }
+                'Fail'    { 'status-fail'; break }
+                'Warning' { 'status-warn'; break }
+                'Info'    { 'status-info'; break }
+                'Error'   { 'status-error'; break }
+                'Pass'    { 'status-pass'; break }
             }
-        } else {
-            $className = 'status-zero'
-        }
+        } else { 'status-zero' }
         $htmlParts += " <span class='$className'>$statusName $count</span> "
     }
-    $detailedStatusHtml = if ($htmlParts.Count -gt 0) {
-        '|' + ($htmlParts -join '|') + '|'
-    } else {
-        "Summary table could not be parsed."
-    }
+    $detailedStatusHtml = if ($htmlParts.Count -gt 0) { '|' + ($htmlParts -join '|') + '|' } else { "Summary table could not be parsed." }
 
     $summaryData += [PSCustomObject]@{
         ClusterName    = $clusterName
@@ -233,7 +214,6 @@ foreach ($reportFile in $reportFiles) {
 
 $summaryData = $summaryData | Sort-Object StatusPriority, ClusterName
 
-# --- MODIFICATION: Added id='summary' to the h2 tag for back-linking ---
 $summaryTableHtml = @"
 <h2 id='summary'>Execution Summary</h2>
 <table class="summary-table">
@@ -254,10 +234,8 @@ foreach ($item in $summaryData) {
 }
 $summaryTableHtml += "</tbody></table>"
 
-# --- MODIFICATION: Build collapsible sections with back-to-summary links ---
 $htmlBody = ""
 foreach ($item in $summaryData) {
-    # Use <details> for a collapsible section. The <summary> tag is the clickable header.
     $htmlBody += "<details>"
     $htmlBody += "<summary id='cluster-$($item.ClusterName)'>Cluster: $($item.ClusterName) <a href='#summary' class='back-to-summary'>[ Back to Summary ]</a></summary>"
 
@@ -282,13 +260,12 @@ foreach ($item in $summaryData) {
         }
     }
 
-    # The content of the collapsible section
     $htmlBody += "<pre>$formattedContent</pre>"
     $htmlBody += "</details>"
 }
 
 $htmlFoot = @"
-    <footer>Report generated by NCC_clusters.ps1 v1.15</footer>
+    <footer>Report generated by NCC_clusters.ps1 v1.16</footer>
 </body>
 </html>
 "@
