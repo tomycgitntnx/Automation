@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     This script connects to a list of Prism Central instances defined in 'clusters.txt',
-    fetches all unresolved alerts for Prism Element clusters using a single Nutanix v4 REST API call per PC,
+    fetches all unresolved alerts for Prism Element clusters using the Nutanix v4 Monitoring API,
     and creates a detailed HTML report organized by cluster. It also maintains a master index HTML page.
 
     Features:
@@ -19,7 +19,7 @@
 .NOTES
     Author: Tomy Carrasco
     Date: 2025-Oct-27
-    Version: 1.2 - Simplified to fetch all alerts from PC at once.
+    Version: 1.3 - Corrected the API endpoint to use the monitoring/serviceability path.
     PowerShell Version: 5.1+
 #>
 
@@ -127,13 +127,14 @@ function Get-NutanixUnresolvedAlerts {
         [string]$PCAddress,
         [System.Management.Automation.PSCredential]$Credential
     )
-    # API endpoint to get all unresolved alerts originating from Prism Element clusters
+    # CORRECTED API endpoint to get all unresolved alerts originating from Prism Element clusters
     $filter = "resolved eq false and context.sourceEntityType eq 'CLUSTER'"
     $encodedFilter = [System.Web.HttpUtility]::UrlEncode($filter)
-    $uri = "https://$($PCAddress):9440/api/prism/v4.0.b2/alerts?`$filter=$($encodedFilter)"
+    $uri = "https://$($PCAddress):9440/api/monitoring/v4.0.b1/serviceability/alerts?`$filter=$($encodedFilter)"
 
     try {
         $response = Invoke-RestMethod -Method GET -Uri $uri -Credential $Credential -ContentType "application/json"
+        # The response from this endpoint contains the alerts in the 'data' property
         return $response.data
     }
     catch {
