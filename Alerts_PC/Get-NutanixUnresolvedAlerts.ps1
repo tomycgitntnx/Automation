@@ -4,8 +4,8 @@
 
 .DESCRIPTION
     This script connects to a list of Prism Central instances defined in 'clusters.txt',
-    fetches all unresolved alerts for Prism Element clusters using the Nutanix v4 REST API,
-    and creates a detailed HTML report. It also maintains a master index HTML page of all generated reports.
+    fetches all unresolved alerts for Prism Element clusters using a single Nutanix v4 REST API call per PC,
+    and creates a detailed HTML report organized by cluster. It also maintains a master index HTML page.
 
     Features:
     - Reads PC addresses from an external file.
@@ -19,8 +19,9 @@
 .NOTES
     Author: Tomy Carrasco
     Date: 2025-Oct-27
-    Version: 1.1 - Corrected for PowerShell 5 compatibility.
+    Version: 1.2 - Simplified to fetch all alerts from PC at once.
     PowerShell Version: 5.1+
+
 #>
 
 # --- Script Configuration ---
@@ -46,7 +47,7 @@ function Main {
     }
     $pcAddresses = Get-Content $pcListFile
 
-    # 3. Initialize HTML Report Body
+    # 3. Initialize collections for the report
     $htmlBody = ""
     $summaryData = @()
 
@@ -54,25 +55,26 @@ function Main {
     foreach ($pcAddress in $pcAddresses) {
         Write-Host "Connecting to PC: $pcAddress"
 
-        # A. Get PE Clusters managed by this PC
-        $peClusters = Get-NutanixPEClusters -PCAddress $pcAddress -Credential $credential
-        if (-not $peClusters) {
-            Write-Warning "Could not retrieve PE clusters from $pcAddress. Skipping."
+        # A. Get ALL unresolved alerts for PE clusters from this PC in one call
+        $allAlerts = Get-NutanixUnresolvedAlerts -PCAddress $pcAddress -Credential $credential
+        if ($null -eq $allAlerts) {
+            Write-Warning "Could not retrieve alerts from $pcAddress. Skipping."
             continue
         }
 
-        # B. For each PE Cluster, get unresolved alerts
-        foreach ($peCluster in $peClusters) {
-            $clusterName = $peCluster.name
-            $clusterUuid = $peCluster.extId
-            Write-Host "  -> Fetching alerts for cluster: $clusterName ($clusterUuid)"
+        # B. Group alerts by their source cluster name
+        $alertsByCluster = $allAlerts | Where-Object { $_.context.sourceClusterName } | Group-Object { $_.context.sourceClusterName }
 
-            $alerts = Get-NutanixUnresolvedAlerts -PCAddress $pcAddress -Credential $credential -ClusterUuid $clusterUuid
+        # C. Process each cluster's group of alerts
+        foreach ($clusterGroup in $alertsByCluster) {
+            $clusterName = $clusterGroup.Name
+            $clusterAlerts = $clusterGroup.Group
+            Write-Host "  -> Processing alerts for cluster: $clusterName"
 
-            # C. Generate Summary
-            $criticalCount = ($alerts | Where-Object { $_.severity -eq 'CRITICAL' }).Count
-            $warningCount = ($alerts | Where-Object { $_.severity -eq 'WARNING' }).Count
-            $infoCount = ($alerts | Where-Object { $_.severity -eq 'INFO' }).Count
+            # D. Generate Summary for the index table
+            $criticalCount = ($clusterAlerts | Where-Object { $_.severity -eq 'CRITICAL' }).Count
+            $warningCount = ($clusterAlerts | Where-Object { $_.severity -eq 'WARNING' }).Count
+            $infoCount = ($clusterAlerts | Where-Object { $_.severity -eq 'INFO' }).Count
 
             $summaryData += [PSCustomObject]@{
                 ClusterName   = $clusterName
@@ -81,8 +83,8 @@ function Main {
                 InfoCount     = $infoCount
             }
 
-            # D. Build HTML for this cluster's alerts
-            $htmlBody += Build-ClusterAlertsHtml -ClusterName $clusterName -Alerts $alerts
+            # E. Build the HTML table for this cluster's alerts
+            $htmlBody += Build-ClusterAlertsHtml -ClusterName $clusterName -Alerts $clusterAlerts
         }
     }
 
@@ -110,12 +112,10 @@ function Get-Credentials {
         [string]$CredentialFile
     )
     if (Test-Path $CredentialFile) {
-        # Credential file exists, import it
         Write-Host "Loading credentials from $CredentialFile..."
         return Import-Clixml -Path $CredentialFile
     }
     else {
-        # No credential file, prompt user and export
         Write-Host "Credential file not found. Please enter credentials for user '$Username'."
         $cred = Get-Credential -UserName $Username -Message "Enter password for Nutanix API access"
         $cred | Export-Clixml -Path $CredentialFile
@@ -123,30 +123,13 @@ function Get-Credentials {
     }
 }
 
-function Get-NutanixPEClusters {
+function Get-NutanixUnresolvedAlerts {
     param(
         [string]$PCAddress,
         [System.Management.Automation.PSCredential]$Credential
     )
-    $uri = "https://$($PCAddress):9440/api/prism/v4.0.b2/clusters?`$filter=type eq 'PRISM_ELEMENT'"
-    try {
-        $response = Invoke-RestMethod -Method GET -Uri $uri -Credential $Credential -ContentType "application/json"
-        return $response.data
-    }
-    catch {
-        Write-Warning "Failed to get PE Clusters from $PCAddress. Error: $($_.Exception.Message)"
-        return $null
-    }
-}
-
-function Get-NutanixUnresolvedAlerts {
-    param(
-        [string]$PCAddress,
-        [System.Management.Automation.PSCredential]$Credential,
-        [string]$ClusterUuid
-    )
-    # API endpoint to get unresolved alerts for a specific cluster
-    $filter = "resolved eq false and sourceClusterExtId eq '$($ClusterUuid)'"
+    # API endpoint to get all unresolved alerts originating from Prism Element clusters
+    $filter = "resolved eq false and context.sourceEntityType eq 'CLUSTER'"
     $encodedFilter = [System.Web.HttpUtility]::UrlEncode($filter)
     $uri = "https://$($PCAddress):9440/api/prism/v4.0.b2/alerts?`$filter=$($encodedFilter)"
 
@@ -155,8 +138,8 @@ function Get-NutanixUnresolvedAlerts {
         return $response.data
     }
     catch {
-        Write-Warning "Failed to get unresolved alerts for cluster $ClusterUuid from $PCAddress. Error: $($_.Exception.Message)"
-        return @() # Return empty array on failure
+        Write-Warning "Failed to get unresolved alerts from $PCAddress. Error: $($_.Exception.Message)"
+        return $null # Return null on failure
     }
 }
 
@@ -191,13 +174,12 @@ function Build-ClusterAlertsHtml {
         foreach ($alert in $sortedAlerts) {
             $severityColor = switch ($alert.severity) {
                 'CRITICAL' { 'red' }
-                'WARNING' { '#f0ad4e' } # Yellow-ish for better readability
-                'INFO'    { 'blue' }
-                default   { 'black' }
+                'WARNING'  { '#f0ad4e' } # Yellow-ish for better readability
+                'INFO'     { 'blue' }
+                default    { 'black' }
             }
 
-            # The API returns creationTime as a string in ISO 8601 format (e.g., '2025-10-27T15:30:00Z')
-            # Convert it to a local DateTime object for display
+            # Convert ISO 8601 string to local time for display
             $createdTime = ([datetime]$alert.creationTime).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
             $impact = $alert.impact.type
 
@@ -223,7 +205,6 @@ function Build-FullHtmlReport {
         [array]$SummaryData,
         [string]$HtmlBody
     )
-    # Get the same style as NCC_clusters.ps1
     $htmlStyle = Get-HtmlStyle
 
     # Build Summary Table
@@ -236,7 +217,9 @@ function Build-FullHtmlReport {
         <th>Alerts</th>
     </tr>
 "@
-    foreach ($summary in $SummaryData) {
+    # Sort summary data by cluster name for consistent order
+    $sortedSummary = $SummaryData | Sort-Object ClusterName
+    foreach ($summary in $sortedSummary) {
         $clusterAnchor = ($summary.ClusterName -replace '\s','').ToLower()
         $alertSummary = ""
         if ($summary.CriticalCount -gt 0) {$alertSummary += "<span style='color:red; font-weight:bold;'>Critical: $($summary.CriticalCount)</span> | "}
@@ -257,7 +240,6 @@ function Build-FullHtmlReport {
     }
     $summaryTable += "</table></div><hr>"
 
-    # Combine all parts into a final HTML document
     $html = @"
 <!DOCTYPE html>
 <html>
@@ -283,7 +265,6 @@ function Update-MasterIndexHtml {
     $indexFilePath = Join-Path $ReportsDir "index.html"
     $htmlStyle = Get-HtmlStyle
 
-    # Get all report files and group by month
     $reports = Get-ChildItem -Path $ReportsDir -Filter "*.html" | Where-Object { $_.Name -ne 'index.html' } |
                Sort-Object CreationTime -Descending |
                Group-Object { $_.CreationTime.ToString("MMMM yyyy") }
@@ -322,48 +303,4 @@ function Update-MasterIndexHtml {
 }
 
 function Get-HtmlStyle {
-    # This style is based on common Nutanix report styles for a clean, professional look.
-    return @"
-<style>
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-    h1, h2 { color: #003a70; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; background-color: white; }
-    th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; }
-    th { background-color: #003a70; color: white; }
-    tr:nth-child(even) { background-color: #f9f9f9; }
-    tr:hover { background-color: #eaf2fa; }
-    hr { border: 0; border-top: 1px solid #ccc; }
-    details > summary { padding: 10px; background-color: #e8e8e8; border: 1px solid #ccc; cursor: pointer; font-weight: bold; }
-    .cluster-header { font-size: 1.2em; }
-    .cluster-content { padding: 15px; border: 1px solid #ccc; border-top: none; }
-    .back-link { font-size: 0.7em; font-weight: normal; margin-left: 20px; }
-    a { color: #007bff; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-</style>
-"@
-}
-
-# --- Disable Certificate Validation for PowerShell 5 (for non-production environments) ---
-# This approach defines a custom policy to trust all certificates, which is necessary
-# when Invoke-RestMethod does not have the -SkipCertificateCheck parameter.
-if ($PSVersionTable.PSVersion.Major -le 5) {
-    if (-not ([System.Net.ServicePointManager]::CertificatePolicy.GetType().Name -eq 'TrustAllCertsPolicy')) {
-        Add-Type -TypeDefinition @"
-        using System.Net;
-        using System.Security.Cryptography.X509Certificates;
-        public class TrustAllCertsPolicy : ICertificatePolicy {
-            public bool CheckValidationResult(
-                ServicePoint srvPoint, X509Certificate certificate,
-                WebRequest request, int certificateProblem) {
-                return true;
-            }
-        }
-"@ -ErrorAction SilentlyContinue
-        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-    }
-    # Enforce TLS 1.2 for modern security standards
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-}
-
-# --- Start the script ---
-Main
+    # This style is based on common 
