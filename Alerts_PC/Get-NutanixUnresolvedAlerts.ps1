@@ -21,7 +21,6 @@
     Date: 2025-Oct-27
     Version: 1.2 - Simplified to fetch all alerts from PC at once.
     PowerShell Version: 5.1+
-
 #>
 
 # --- Script Configuration ---
@@ -303,4 +302,46 @@ function Update-MasterIndexHtml {
 }
 
 function Get-HtmlStyle {
-    # This style is based on common 
+    # This style is based on common Nutanix report styles for a clean, professional look.
+    return @"
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
+    h1, h2 { color: #003a70; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; background-color: white; }
+    th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+    th { background-color: #003a70; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #eaf2fa; }
+    hr { border: 0; border-top: 1px solid #ccc; }
+    details > summary { padding: 10px; background-color: #e8e8e8; border: 1px solid #ccc; cursor: pointer; font-weight: bold; }
+    .cluster-header { font-size: 1.2em; }
+    .cluster-content { padding: 15px; border: 1px solid #ccc; border-top: none; }
+    .back-link { font-size: 0.7em; font-weight: normal; margin-left: 20px; }
+    a { color: #007bff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+</style>
+"@
+}
+
+# --- Disable Certificate Validation for PowerShell 5 ---
+if ($PSVersionTable.PSVersion.Major -le 5) {
+    if (-not ([System.Net.ServicePointManager]::CertificatePolicy.GetType().Name -eq 'TrustAllCertsPolicy')) {
+        Add-Type -TypeDefinition @"
+        using System.Net;
+        using System.Security.Cryptography.X509Certificates;
+        public class TrustAllCertsPolicy : ICertificatePolicy {
+            public bool CheckValidationResult(
+                ServicePoint srvPoint, X509Certificate certificate,
+                WebRequest request, int certificateProblem) {
+                return true;
+            }
+        }
+"@ -ErrorAction SilentlyContinue
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    }
+    # Enforce TLS 1.2 for modern security standards
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+}
+
+# --- Start the script ---
+Main
