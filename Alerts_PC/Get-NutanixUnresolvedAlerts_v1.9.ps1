@@ -91,4 +91,258 @@ function Main {
 
     # 7. Process each cluster’s group of alerts
     foreach ($clusterGroup in ($alertsByCluster | Sort-Object Name)) {
-        $clusterN
+        $clusterName = $clusterGroup.Name
+        $clusterAlerts = $clusterGroup.Group
+        Write-Host "  -> Processing alerts for cluster: $clusterName"
+
+        # --- Fixed Counter Logic (case-insensitive) ---
+        $criticalCount = ($clusterAlerts | Where-Object { $_.severity -match 'CRITICAL' }).Count
+        $warningCount  = ($clusterAlerts | Where-Object { $_.severity -match 'WARNING' }).Count
+        $infoCount     = ($clusterAlerts | Where-Object { $_.severity -match 'INFO' }).Count
+
+        $summaryData += [PSCustomObject]@{
+            ClusterName   = $clusterName
+            CriticalCount = $criticalCount
+            WarningCount  = $warningCount
+            InfoCount     = $infoCount
+        }
+
+        # --- Build HTML for this cluster’s alerts ---
+        $htmlBody += Build-ClusterAlertsHtml -ClusterName $clusterName -Alerts $clusterAlerts
+    }
+
+    # 8. Build the complete HTML report
+    $timestamp = Get-Date -Format "MM_dd_yyyy__HH_mm_ss"
+    $reportFileName = "Nutanix_Unresolved_Alerts_$timestamp.html"
+    $reportFilePath = Join-Path $reportsDir $reportFileName
+
+    $finalHtml = Build-FullHtmlReport -SummaryData $summaryData -HtmlBody $htmlBody
+    $finalHtml | Out-File -FilePath $reportFilePath -Encoding UTF8
+
+    Write-Host "Successfully generated report: $reportFilePath"
+
+    # 9. Update the master index page
+    Update-MasterIndexHtml -ReportsDir $reportsDir
+    Write-Host "Master index page updated."
+}
+
+# --- Helper Functions ---
+
+function Get-Credentials {
+    param(
+        [string]$Username,
+        [string]$CredentialFile
+    )
+    if (Test-Path $CredentialFile) {
+        Write-Host "Loading credentials from $CredentialFile..."
+        return Import-Clixml -Path $CredentialFile
+    } else {
+        Write-Host "Credential file not found. Please enter credentials for user '$Username'."
+        $cred = Get-Credential -UserName $Username -Message "Enter password for Nutanix API access"
+        $cred | Export-Clixml -Path $CredentialFile
+        return $cred
+    }
+}
+
+function Build-ClusterAlertsHtml {
+    param(
+        [string]$ClusterName,
+        [array]$Alerts
+    )
+    $clusterAnchor = ($ClusterName -replace '[^a-zA-Z0-9]','').ToLower()
+    $clusterHtml = @"
+<details open>
+    <summary><h2>Cluster: $ClusterName <a href="#index" class="back-link">[Back to Index]</a></h2></summary>
+    <div id="$clusterAnchor" class="cluster-content">
+"@
+    if ($Alerts.Count -eq 0) {
+        $clusterHtml += "<p>No unresolved alerts found.</p>"
+    } else {
+        $clusterHtml += @"
+    <table>
+        <tr>
+            <th>Severity</th>
+            <th>Title</th>
+            <th>Message</th>
+            <th>Created Time</th>
+            <th>Impact</th>
+        </tr>
+"@
+        # Sort alerts by severity (case-insensitive)
+        $sortedAlerts = $Alerts | Sort-Object @{Expression={@('CRITICAL','WARNING','INFO').IndexOf($_.severity.ToUpper())}}
+
+        foreach ($alert in $sortedAlerts) {
+            $severity = $alert.severity.ToUpper()
+            $severityColor = switch ($severity) {
+                'CRITICAL' { 'red' }
+                'WARNING'  { '#f0ad4e' }
+                'INFO'     { 'blue' }
+                default    { 'black' }
+            }
+
+            $createdTime = ([datetime]$alert.creationTime).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+            $impact = $alert.impact.type
+
+            $clusterHtml += @"
+        <tr>
+            <td style="color:$severityColor; font-weight:bold;">$severity</td>
+            <td>$($alert.title)</td>
+            <td>$($alert.detail)</td>
+            <td>$createdTime</td>
+            <td>$impact</td>
+        </tr>
+"@
+        }
+        $clusterHtml += "    </table>"
+    }
+
+    $clusterHtml += "    </div></details>"
+    return $clusterHtml
+}
+
+function Build-FullHtmlReport {
+    param(
+        [array]$SummaryData,
+        [string]$HtmlBody
+    )
+    $htmlStyle = Get-HtmlStyle
+
+    $summaryTable = @"
+<div id="index">
+<h2>Alerts Summary</h2>
+<table>
+    <tr>
+        <th>Cluster Name</th>
+        <th>Alerts</th>
+    </tr>
+"@
+    if ($SummaryData.Count -eq 0) {
+        $summaryTable += "<tr><td colspan='2' style='text-align:center;'>No unresolved alerts to summarize.</td></tr>"
+    } else {
+        foreach ($summary in ($SummaryData | Sort-Object ClusterName)) {
+            $clusterAnchor = ($summary.ClusterName -replace '[^a-zA-Z0-9]','').ToLower()
+            $alertSummary = ""
+            $alertSummary += "<span style='color:red; font-weight:bold;'>Critical: $($summary.CriticalCount)</span> | "
+            $alertSummary += "<span style='color:#f0ad4e; font-weight:bold;'>Warning: $($summary.WarningCount)</span> | "
+            $alertSummary += "<span style='color:blue; font-weight:bold;'>Info: $($summary.InfoCount)</span>"
+            $summaryTable += @"
+    <tr>
+        <td><a href="#$clusterAnchor">$($summary.ClusterName)</a></td>
+        <td>$alertSummary</td>
+    </tr>
+"@
+        }
+    }
+    $summaryTable += "</table></div>"
+
+    $html = @"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nutanix Unresolved Alerts Report</title>
+    $htmlStyle
+</head>
+<body>
+    <h1>Nutanix Unresolved Alerts Report</h1>
+    <p>Generated on: $(Get-Date)</p>
+    $summaryTable
+    $HtmlBody
+    <footer>
+        <p>Report generated by the Nutanix Unresolved Alerts Script</p>
+    </footer>
+</body>
+</html>
+"@
+    return $html
+}
+
+function Update-MasterIndexHtml {
+    param([string]$ReportsDir)
+    $indexFilePath = Join-Path $ReportsDir "index.html"
+    $htmlStyle = Get-HtmlStyle
+
+    $reports = Get-ChildItem -Path $ReportsDir -Filter "*.html" | Where-Object { $_.Name -ne 'index.html' } |
+               Sort-Object CreationTime -Descending |
+               Group-Object { $_.CreationTime.ToString("MMMM yyyy") }
+
+    $indexBody = "<h1>Nutanix Alert Reports Index</h1>"
+    foreach ($monthGroup in $reports) {
+        $monthName = $monthGroup.Name
+        $indexBody += @"
+<details open>
+    <summary><h2>$monthName</h2></summary>
+    <div class="cluster-content">
+        <ul>
+"@
+        foreach ($report in $monthGroup.Group) {
+            $reportName = $report.Name
+            $reportDate = $report.CreationTime.ToString("yyyy-MM-dd HH:mm:ss")
+            $indexBody += "            <li><span class='date'>$reportDate</span><span class='links'><a href='$reportName'>$reportName</a></span></li>`n"
+        }
+        $indexBody += "        </ul></div></details>"
+    }
+
+    $html = @"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nutanix Reports Index</title>
+    $htmlStyle
+</head>
+<body>
+    $indexBody
+    <footer>
+        <p>Index page generated by the Nutanix Unresolved Alerts Script</p>
+    </footer>
+</body>
+</html>
+"@
+    $html | Out-File -FilePath $indexFilePath -Encoding UTF8
+}
+
+function Get-HtmlStyle {
+    return @"
+    <style>
+        body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; }
+        h1 { color: #003a70; border-bottom: 2px solid #00b1e7; padding-bottom: 10px; }
+        h2 { font-size: 1.5em; color: #003a70; }
+        ul { list-style-type: none; padding-left: 0; }
+        li { background-color: #fff; margin: 8px 0; padding: 12px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; }
+        li .date { font-weight: bold; }
+        li .links a { margin-left: 15px; text-decoration: none; font-weight: bold; color: #007bff; }
+        li .links a:hover { text-decoration: underline; }
+        details { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; }
+        summary { font-weight: bold; font-size: 1.2em; cursor: pointer; padding: 10px 20px; position: relative; }
+        .cluster-content { padding: 0 20px 20px 20px; }
+        .back-link { font-size: 0.7em; font-weight: normal; margin-left: 20px; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; background-color: white; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
+        th, td { border: 1px solid #dddddd; text-align: left; padding: 12px; }
+        th { background-color: #003a70; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #eaf2fa; }
+        footer { text-align: center; margin-top: 40px; font-size: 0.9em; color: #888; }
+    </style>
+"@
+}
+
+# --- Disable Certificate Validation for PowerShell 5 ---
+if ($PSVersionTable.PSVersion.Major -le 5) {
+    if (-not ([System.Net.ServicePointManager]::CertificatePolicy.GetType().Name -eq 'TrustAllCertsPolicy')) {
+        Add-Type -TypeDefinition @"
+        using System.Net;
+        using System.Security.Cryptography.X509Certificates;
+        public class TrustAllCertsPolicy : ICertificatePolicy {
+            public bool CheckValidationResult(ServicePoint srvPoint, X509Certificate certificate, WebRequest request, int certificateProblem) {
+                return true;
+            }
+        }
+"@ -ErrorAction SilentlyContinue
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    }
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+}
+
+# --- Start the script ---
+Main
