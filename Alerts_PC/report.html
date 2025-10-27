@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nutanix Unresolved Alerts Report</title>
+        <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; }
+        h1 { color: #003a70; border-bottom: 2px solid #00b1e7; padding-bottom: 10px; }
+        h2 { font-size: 1.5em; color: #003a70; }
+        ul { list-style-type: none; padding-left: 0; }
+        li { background-color: #fff; margin: 8px 0; padding: 12px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; }
+        li .date { font-weight: bold; }
+        li .links a { margin-left: 15px; text-decoration: none; font-weight: bold; color: #007bff; }
+        li .links a:hover { text-decoration: underline; }
+        details { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; }
+        summary { font-weight: bold; font-size: 1.2em; cursor: pointer; padding: 10px 20px; position: relative; }
+        .cluster-content { padding: 0 20px 20px 20px; }
+        .back-link { font-size: 0.7em; font-weight: normal; margin-left: 20px; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; background-color: white; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
+        th, td { border: 1px solid #dddddd; text-align: left; padding: 12px; }
+        th { background-color: #003a70; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #eaf2fa; }
+        footer { text-align: center; margin-top: 40px; font-size: 0.9em; color: #888; }
+    </style>
+</head>
+<body>
+    <h1>Nutanix Unresolved Alerts Report</h1>
+    <p>Generated on: 10/27/2025 15:09:06</p>
+    <div id="index">
+<h2>Alerts Summary</h2>
+<table>
+    <tr>
+        <th>Cluster Name</th>
+        <th>Alerts</th>
+    </tr>    <tr>
+        <td><a href="#d1-nx-prism">D1-NX-PRISM</a></td>
+        <td>Critical: 0 | Warning: 0 | Info: 0</td>
+    </tr>    <tr>
+        <td><a href="#d2-nx-files">D2-NX-FILES</a></td>
+        <td>Critical: 0 | Warning: 0 | Info: 0</td>
+    </tr>    <tr>
+        <td><a href="#s1-nx-prism">S1-NX-PRISM</a></td>
+        <td>Critical: 0 | Warning: 0 | Info: 0</td>
+    </tr></table></div>
+    <details open>
+    <summary><h2>Cluster: S1-NX-PRISM <a href="#index" class="back-link">[Back to Index]</a></h2></summary>
+    <div id="s1-nx-prism" class="cluster-content">    <table>
+        <tr>
+            <th>Severity</th>
+            <th>Title</th>
+            <th>Message</th>
+            <th>Created Time</th>
+            <th>Impact</th>
+        </tr>        <tr>
+            <td style="color:#f0ad4e; font-weight:bold;">WARNING</td>
+            <td>Calm Trial License Expiry</td>
+            <td></td>
+            <td>2025-09-25 14:34:14</td>
+            <td></td>
+        </tr>        <tr>
+            <td style="color:blue; font-weight:bold;">INFO</td>
+            <td>Licensing workflow is incomplete</td>
+            <td></td>
+            <td>2025-10-23 15:45:51</td>
+            <td></td>
+        </tr>    </table>    </div></details><details open>
+    <summary><h2>Cluster: D2-NX-FILES <a href="#index" class="back-link">[Back to Index]</a></h2></summary>
+    <div id="d2-nx-files" class="cluster-content">    <table>
+        <tr>
+            <th>Severity</th>
+            <th>Title</th>
+            <th>Message</th>
+            <th>Created Time</th>
+            <th>Impact</th>
+        </tr>        <tr>
+            <td style="color:red; font-weight:bold;">CRITICAL</td>
+            <td>Cluster {cluster_name} running out of storage</td>
+            <td></td>
+            <td>2025-10-12 00:10:33</td>
+            <td></td>
+        </tr>    </table>    </div></details><details open>
+    <summary><h2>Cluster: D1-NX-PRISM <a href="#index" class="back-link">[Back to Index]</a></h2></summary>
+    <div id="d1-nx-prism" class="cluster-content">    <table>
+        <tr>
+            <th>Severity</th>
+            <th>Title</th>
+            <th>Message</th>
+            <th>Created Time</th>
+            <th>Impact</th>
+        </tr>        <tr>
+            <td style="color:#f0ad4e; font-weight:bold;">WARNING</td>
+            <td>Storage License Overshoot</td>
+            <td></td>
+            <td>2025-09-01 14:02:33</td>
+            <td></td>
+        </tr>        <tr>
+            <td style="color:blue; font-weight:bold;">INFO</td>
+            <td>Licensing workflow is incomplete</td>
+            <td></td>
+            <td>2025-10-23 15:00:26</td>
+            <td></td>
+        </tr>    </table>    </div></details>
+    <footer>
+        <p>Report generated by the Nutanix Unresolved Alerts Script</p>
+    </footer>
+</body>
+</html>
