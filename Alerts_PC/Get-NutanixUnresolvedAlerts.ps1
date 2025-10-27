@@ -19,7 +19,7 @@
 .NOTES
     Author: Tomy Carrasco
     Date: 2025-Oct-27
-    Version: 1.0
+    Version: 1.1 - Corrected for PowerShell 5 compatibility.
     PowerShell Version: 5.1+
 #>
 
@@ -130,7 +130,7 @@ function Get-NutanixPEClusters {
     )
     $uri = "https://$($PCAddress):9440/api/prism/v4.0.b2/clusters?`$filter=type eq 'PRISM_ELEMENT'"
     try {
-        $response = Invoke-RestMethod -Method GET -Uri $uri -Credential $Credential -ContentType "application/json" -SkipCertificateCheck
+        $response = Invoke-RestMethod -Method GET -Uri $uri -Credential $Credential -ContentType "application/json"
         return $response.data
     }
     catch {
@@ -151,7 +151,7 @@ function Get-NutanixUnresolvedAlerts {
     $uri = "https://$($PCAddress):9440/api/prism/v4.0.b2/alerts?`$filter=$($encodedFilter)"
 
     try {
-        $response = Invoke-RestMethod -Method GET -Uri $uri -Credential $Credential -ContentType "application/json" -SkipCertificateCheck
+        $response = Invoke-RestMethod -Method GET -Uri $uri -Credential $Credential -ContentType "application/json"
         return $response.data
     }
     catch {
@@ -165,14 +165,14 @@ function Build-ClusterAlertsHtml {
         [string]$ClusterName,
         [array]$Alerts
     )
-    $clusterAnchor = $ClusterName -replace '\s',''
+    $clusterAnchor = ($ClusterName -replace '\s','').ToLower()
     $clusterHtml = @"
 <details open>
     <summary class="cluster-header"><h2>Cluster: $ClusterName <a href="#index" class="back-link">[Back to Index]</a></h2></summary>
     <div id="$clusterAnchor" class="cluster-content">
 "@
     if ($Alerts.Count -eq 0) {
-        $clusterHtml += "<p>No unresolved alerts.</p>"
+        $clusterHtml += "<p>No unresolved alerts found.</p>"
     }
     else {
         $clusterHtml += @"
@@ -192,11 +192,13 @@ function Build-ClusterAlertsHtml {
             $severityColor = switch ($alert.severity) {
                 'CRITICAL' { 'red' }
                 'WARNING' { '#f0ad4e' } # Yellow-ish for better readability
-                'INFO' { 'blue' }
-                default { 'black' }
+                'INFO'    { 'blue' }
+                default   { 'black' }
             }
 
-            $createdTime = ([datetime]$alert.creationTime).ToString("yyyy-MM-dd HH:mm:ss")
+            # The API returns creationTime as a string in ISO 8601 format (e.g., '2025-10-27T15:30:00Z')
+            # Convert it to a local DateTime object for display
+            $createdTime = ([datetime]$alert.creationTime).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
             $impact = $alert.impact.type
 
             $clusterHtml += @"
@@ -226,7 +228,7 @@ function Build-FullHtmlReport {
 
     # Build Summary Table
     $summaryTable = @"
-<div id="index">
+<a id="index"></a>
 <h2>Alerts Summary</h2>
 <table>
     <tr>
@@ -235,15 +237,15 @@ function Build-FullHtmlReport {
     </tr>
 "@
     foreach ($summary in $SummaryData) {
-        $clusterAnchor = $summary.ClusterName -replace '\s',''
+        $clusterAnchor = ($summary.ClusterName -replace '\s','').ToLower()
         $alertSummary = ""
-        if ($summary.CriticalCount -gt 0) {$alertSummary += "<span style='color:red;'>Critical: $($summary.CriticalCount)</span> | "}
+        if ($summary.CriticalCount -gt 0) {$alertSummary += "<span style='color:red; font-weight:bold;'>Critical: $($summary.CriticalCount)</span> | "}
         else {$alertSummary += "Critical: 0 | "}
 
-        if ($summary.WarningCount -gt 0) {$alertSummary += "<span style='color:#f0ad4e;'>Warning: $($summary.WarningCount)</span> | "}
+        if ($summary.WarningCount -gt 0) {$alertSummary += "<span style='color:#f0ad4e; font-weight:bold;'>Warning: $($summary.WarningCount)</span> | "}
         else {$alertSummary += "Warning: 0 | "}
 
-        if ($summary.InfoCount -gt 0) {$alertSummary += "<span style='color:blue;'>Info: $($summary.InfoCount)</span>"}
+        if ($summary.InfoCount -gt 0) {$alertSummary += "<span style='color:blue; font-weight:bold;'>Info: $($summary.InfoCount)</span>"}
         else {$alertSummary += "Info: 0"}
 
         $summaryTable += @"
@@ -323,16 +325,16 @@ function Get-HtmlStyle {
     # This style is based on common Nutanix report styles for a clean, professional look.
     return @"
 <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
     h1, h2 { color: #003a70; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; background-color: white; }
     th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; }
     th { background-color: #003a70; color: white; }
-    tr:nth-child(even) { background-color: #ffffff; }
-    tr:hover { background-color: #ddd; }
-    hr { border: 1px solid #003a70; }
-    details > summary { padding: 10px; background-color: #e8e8e8; border: 1px solid #ccc; cursor: pointer; }
-    .cluster-header { font-size: 1.2em; font-weight: bold; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #eaf2fa; }
+    hr { border: 0; border-top: 1px solid #ccc; }
+    details > summary { padding: 10px; background-color: #e8e8e8; border: 1px solid #ccc; cursor: pointer; font-weight: bold; }
+    .cluster-header { font-size: 1.2em; }
     .cluster-content { padding: 15px; border: 1px solid #ccc; border-top: none; }
     .back-link { font-size: 0.7em; font-weight: normal; margin-left: 20px; }
     a { color: #007bff; text-decoration: none; }
@@ -341,22 +343,26 @@ function Get-HtmlStyle {
 "@
 }
 
-# --- Disable Certificate Validation (for non-production environments) ---
-# For PowerShell 6+
-# [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-if ([System.Net.ServicePointManager]::CertificatePolicy.GetType().Name -ne 'TrustAllCertsPolicy') {
-    Add-Type @"
-    using System.Net;
-    using System.Security.Cryptography.X509Certificates;
-    public class TrustAllCertsPolicy : ICertificatePolicy {
-        public bool CheckValidationResult(
-            ServicePoint srvPoint, X509Certificate certificate,
-            WebRequest request, int certificateProblem) {
-            return true;
+# --- Disable Certificate Validation for PowerShell 5 (for non-production environments) ---
+# This approach defines a custom policy to trust all certificates, which is necessary
+# when Invoke-RestMethod does not have the -SkipCertificateCheck parameter.
+if ($PSVersionTable.PSVersion.Major -le 5) {
+    if (-not ([System.Net.ServicePointManager]::CertificatePolicy.GetType().Name -eq 'TrustAllCertsPolicy')) {
+        Add-Type -TypeDefinition @"
+        using System.Net;
+        using System.Security.Cryptography.X509Certificates;
+        public class TrustAllCertsPolicy : ICertificatePolicy {
+            public bool CheckValidationResult(
+                ServicePoint srvPoint, X509Certificate certificate,
+                WebRequest request, int certificateProblem) {
+                return true;
+            }
         }
+"@ -ErrorAction SilentlyContinue
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
     }
-"@
-    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    # Enforce TLS 1.2 for modern security standards
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 }
 
 # --- Start the script ---
