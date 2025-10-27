@@ -19,7 +19,7 @@
 .NOTES
     Author: Tomy Carrasco
     Date: 2025-Oct-27
-    Version: 1.7 - Final fix for alert summary counting logic.
+    Version: 1.8 - Final fix for alert summary counting logic.
     PowerShell Version: 5.1+
 #>
 
