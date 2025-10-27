@@ -19,7 +19,7 @@
 .NOTES
     Author: Tomy Carrasco
     Date: 2025-Oct-27
-    Version: 1.5 - Updated HTML styling with user-provided CSS.
+    Version: 1.6 - Corrected logic for alert summary counting.
     PowerShell Version: 5.1+
 #>
 
@@ -46,12 +46,10 @@ function Main {
     }
     $pcAddresses = Get-Content $pcListFile
 
-    # 3. Initialize collections for the report
+    # 3. Initialize a collection for all alerts
     $allAlerts = @()
-    $htmlBody = ""
-    $summaryData = @()
 
-    # 4. Process each Prism Central
+    # 4. Process each Prism Central to gather all alerts
     foreach ($pcAddress in $pcAddresses) {
         Write-Host "Connecting to Prism Central: $pcAddress"
         $apiUrl = "https://{0}:9440/api/monitoring/v4.0/serviceability/alerts" -f $pcAddress
@@ -69,7 +67,6 @@ function Main {
             $response = Invoke-RestMethod -Uri $fullUrl -Method Get -Headers $headers -ErrorAction Stop
             if ($null -ne $response.data) {
                 Write-Host "Successfully retrieved $($response.data.Count) unresolved alerts from $pcAddress."
-                # Add the retrieved alerts to our main collection
                 $allAlerts += $response.data
             } else {
                 Write-Host "No unresolved alerts from Prism Element clusters found on $pcAddress."
@@ -82,7 +79,11 @@ function Main {
     # 5. Group all collected alerts by their source cluster name
     $alertsByCluster = $allAlerts | Where-Object { $_.sourceEntity.name } | Group-Object { $_.sourceEntity.name }
 
-    # 6. Process each cluster's group of alerts
+    # 6. Initialize collections for the HTML report
+    $htmlBody = ""
+    $summaryData = @()
+
+    # 7. Process each cluster's group of alerts to build both summary and body
     foreach ($clusterGroup in $alertsByCluster) {
         $clusterName = $clusterGroup.Name
         $clusterAlerts = $clusterGroup.Group
@@ -104,7 +105,7 @@ function Main {
         $htmlBody += Build-ClusterAlertsHtml -ClusterName $clusterName -Alerts $clusterAlerts
     }
 
-    # 7. Build the complete HTML report
+    # 8. Build the complete HTML report
     $timestamp = Get-Date -Format "MM_dd_yyyy__HH_mm_ss"
     $reportFileName = "Nutanix_Unresolved_Alerts_$timestamp.html"
     $reportFilePath = Join-Path $reportsDir $reportFileName
@@ -114,7 +115,7 @@ function Main {
 
     Write-Host "Successfully generated report: $reportFilePath"
 
-    # 8. Update the master index page
+    # 9. Update the master index page
     Update-MasterIndexHtml -ReportsDir $reportsDir
 
     Write-Host "Master index page updated."
@@ -144,7 +145,7 @@ function Build-ClusterAlertsHtml {
         [string]$ClusterName,
         [array]$Alerts
     )
-    $clusterAnchor = ($ClusterName -replace '\s','').ToLower()
+    $clusterAnchor = ($ClusterName -replace '[^a-zA-Z0-9]','').ToLower()
     $clusterHtml = @"
 <details open>
     <summary><h2>Cluster: $ClusterName <a href="#index" class="back-link">[Back to Index]</a></h2></summary>
@@ -216,7 +217,7 @@ function Build-FullHtmlReport {
     # Sort summary data by cluster name for consistent order
     $sortedSummary = $SummaryData | Sort-Object ClusterName
     foreach ($summary in $sortedSummary) {
-        $clusterAnchor = ($summary.ClusterName -replace '\s','').ToLower()
+        $clusterAnchor = ($summary.ClusterName -replace '[^a-zA-Z0-9]','').ToLower()
         $alertSummary = ""
         if ($summary.CriticalCount -gt 0) {$alertSummary += "<span style='color:red; font-weight:bold;'>Critical: $($summary.CriticalCount)</span> | "}
         else {$alertSummary += "Critical: 0 | "}
@@ -306,7 +307,6 @@ function Update-MasterIndexHtml {
 
 function Get-HtmlStyle {
     # This style is based on the user-provided CSS for a modern look.
-    # A few table-specific styles were added to match the script's output.
     return @"
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; }
