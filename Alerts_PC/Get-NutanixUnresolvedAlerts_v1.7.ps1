@@ -46,8 +46,8 @@ function Main {
     }
     $pcAddresses = Get-Content $pcListFile
 
-    # 3. Initialize a collection for all alerts. Using @() ensures it's always an array.
-    [System.Collections.ArrayList]$allAlerts = @()
+    # 3. Initialize a collection for all alerts.
+    $allAlerts = @()
 
     # 4. Process each Prism Central to gather all alerts
     foreach ($pcAddress in $pcAddresses) {
@@ -66,9 +66,13 @@ function Main {
         try {
             $response = Invoke-RestMethod -Uri $fullUrl -Method Get -Headers $headers -ErrorAction Stop
             if ($null -ne $response.data) {
-                Write-Host "Successfully retrieved $($response.data.Count) unresolved alerts from $pcAddress."
-                # Add the data to the ArrayList. This correctly handles single or multiple items.
-                $allAlerts.AddRange($response.data)
+                # ** THE FIX IS HERE **
+                # Force the response data to be an array, even if only one item is returned.
+                $retrievedAlerts = @($response.data)
+
+                Write-Host "Successfully retrieved $($retrievedAlerts.Count) unresolved alerts from $pcAddress."
+                # Add the guaranteed array of alerts to our main collection.
+                $allAlerts += $retrievedAlerts
             } else {
                 Write-Host "No unresolved alerts from Prism Element clusters found on $pcAddress."
             }
@@ -222,7 +226,7 @@ function Build-FullHtmlReport {
     </tr>
 "@
     if ($SummaryData.Count -eq 0) {
-        $summaryTable += "<tr><td colspan='2'>No unresolved alerts to summarize.</td></tr>"
+        $summaryTable += "<tr><td colspan='2' style='text-align:center;'>No unresolved alerts to summarize.</td></tr>"
     }
     else {
         # Sort summary data by cluster name for consistent order
@@ -273,7 +277,7 @@ function Update-MasterIndexHtml {
     param(
         [string]$ReportsDir
     )
-    $indexFilePath = Join-Path $ReportsDir "index.html"
+    $indexFilePath = Join-Path $reportsDir "index.html"
     $htmlStyle = Get-HtmlStyle
 
     $reports = Get-ChildItem -Path $ReportsDir -Filter "*.html" | Where-Object { $_.Name -ne 'index.html' } |
