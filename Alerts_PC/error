@@ -1,23 +1,14 @@
-Starting script...
-SSL certificate validation is being bypassed.
-Connecting to s1-nx-prism and fetching unresolved alerts...
-Fetching page 1 (alerts 1 - 100)...
-C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Alert_PC-v1_0.ps1 : An error occurred while calling the Nutanix API.
-    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
-    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Alert_PC-v1_0.ps1
- 
-C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Alert_PC-v1_0.ps1 : URL: https://s1-nx-prism:9440/api/monitoring/v4.1/alerts?$filter=isResolved eq false&$top=100&$skip=0
-    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
-    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Alert_PC-v1_0.ps1
- 
-C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Alert_PC-v1_0.ps1 : Status Code: 404
-    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
-    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Alert_PC-v1_0.ps1
- 
-New-Object : A constructor was not found. Cannot find an appropriate constructor for type System.IO.StreamReader.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Alert_PC-v1_0.ps1:115 char:74
-+ ... ponse.GetResponseStream() | New-Object System.IO.StreamReader | ForEa ...
-+                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : ObjectNotFound: (:) [New-Object], PSArgumentException
-    + FullyQualifiedErrorId : CannotFindAppropriateCtor,Microsoft.PowerShell.Commands.NewObjectCommand
- 
+
+PS C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC> C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Get-NutanixUnresolvedAlerts.ps1
+Credential file not found. Please enter credentials for user 'admin'.
+Connecting to PC: S1-NX-PRISM
+WARNING: Failed to get PE Clusters from S1-NX-PRISM. Error: A parameter cannot be found that matches parameter name 'SkipCertificateCheck'.
+WARNING: Could not retrieve PE clusters from S1-NX-PRISM. Skipping.
+Connecting to PC: D2-NX-PRISM
+WARNING: Failed to get PE Clusters from D2-NX-PRISM. Error: A parameter cannot be found that matches parameter name 'SkipCertificateCheck'.
+WARNING: Could not retrieve PE clusters from D2-NX-PRISM. Skipping.
+Connecting to PC: D1-NX-PRISM
+WARNING: Failed to get PE Clusters from D1-NX-PRISM. Error: A parameter cannot be found that matches parameter name 'SkipCertificateCheck'.
+WARNING: Could not retrieve PE clusters from D1-NX-PRISM. Skipping.
+Successfully generated report: .\Reports\Nutanix_Unresolved_Alerts_10_27_2025__11_23_25.html
+Master index page updated.
