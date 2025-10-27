@@ -19,7 +19,7 @@
 .NOTES
     Author: Tomy Carrasco
     Date: 2025-Oct-27
-    Version: 1.3 - Corrected the API endpoint to use the monitoring/serviceability path.
+    Version: 1.4 - Integrated user-provided snippet for API connection and authentication.
     PowerShell Version: 5.1+
 #>
 
@@ -47,47 +47,64 @@ function Main {
     $pcAddresses = Get-Content $pcListFile
 
     # 3. Initialize collections for the report
+    $allAlerts = @()
     $htmlBody = ""
     $summaryData = @()
 
-    # 4. Process each Prism Central
+    # 4. Process each Prism Central using the new logic
     foreach ($pcAddress in $pcAddresses) {
-        Write-Host "Connecting to PC: $pcAddress"
+        Write-Host "Connecting to Prism Central: $pcAddress"
+        $apiUrl = "https://{0}:9440/api/monitoring/v4.0/serviceability/alerts" -f $pcAddress
 
-        # A. Get ALL unresolved alerts for PE clusters from this PC in one call
-        $allAlerts = Get-NutanixUnresolvedAlerts -PCAddress $pcAddress -Credential $credential
-        if ($null -eq $allAlerts) {
-            Write-Warning "Could not retrieve alerts from $pcAddress. Skipping."
-            continue
-        }
+        # Manually create the Authorization header
+        $password = $credential.GetNetworkCredential().Password
+        $authHeader = "Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $credential.UserName, $password)))
+        $headers = @{ "Authorization" = $authHeader; "Content-Type" = "application/json" }
 
-        # B. Group alerts by their source cluster name
-        $alertsByCluster = $allAlerts | Where-Object { $_.context.sourceClusterName } | Group-Object { $_.context.sourceClusterName }
+        # Use the new filter and expand parameter
+        $filter = "?`$filter=isResolved eq false and sourceEntity/type eq 'cluster'&`$expand=sourceEntity"
+        $fullUrl = $apiUrl + $filter
 
-        # C. Process each cluster's group of alerts
-        foreach ($clusterGroup in $alertsByCluster) {
-            $clusterName = $clusterGroup.Name
-            $clusterAlerts = $clusterGroup.Group
-            Write-Host "  -> Processing alerts for cluster: $clusterName"
-
-            # D. Generate Summary for the index table
-            $criticalCount = ($clusterAlerts | Where-Object { $_.severity -eq 'CRITICAL' }).Count
-            $warningCount = ($clusterAlerts | Where-Object { $_.severity -eq 'WARNING' }).Count
-            $infoCount = ($clusterAlerts | Where-Object { $_.severity -eq 'INFO' }).Count
-
-            $summaryData += [PSCustomObject]@{
-                ClusterName   = $clusterName
-                CriticalCount = $criticalCount
-                WarningCount  = $warningCount
-                InfoCount     = $infoCount
+        try {
+            $response = Invoke-RestMethod -Uri $fullUrl -Method Get -Headers $headers -ErrorAction Stop
+            if ($null -ne $response.data) {
+                Write-Host "Successfully retrieved $($response.data.Count) unresolved alerts from $pcAddress."
+                # Add the retrieved alerts to our main collection
+                $allAlerts += $response.data
+            } else {
+                Write-Host "No unresolved alerts from Prism Element clusters found on $pcAddress."
             }
-
-            # E. Build the HTML table for this cluster's alerts
-            $htmlBody += Build-ClusterAlertsHtml -ClusterName $clusterName -Alerts $clusterAlerts
+        } catch {
+            Write-Warning "Failed to retrieve alerts from $pcAddress. Error: $($_.Exception.Message)"
         }
     }
 
-    # 5. Build the complete HTML report
+    # 5. Group all collected alerts by their source cluster name
+    $alertsByCluster = $allAlerts | Where-Object { $_.sourceEntity.name } | Group-Object { $_.sourceEntity.name }
+
+    # 6. Process each cluster's group of alerts
+    foreach ($clusterGroup in $alertsByCluster) {
+        $clusterName = $clusterGroup.Name
+        $clusterAlerts = $clusterGroup.Group
+        Write-Host "  -> Processing alerts for cluster: $clusterName"
+
+        # A. Generate Summary for the index table
+        $criticalCount = ($clusterAlerts | Where-Object { $_.severity -eq 'CRITICAL' }).Count
+        $warningCount = ($clusterAlerts | Where-Object { $_.severity -eq 'WARNING' }).Count
+        $infoCount = ($clusterAlerts | Where-Object { $_.severity -eq 'INFO' }).Count
+
+        $summaryData += [PSCustomObject]@{
+            ClusterName   = $clusterName
+            CriticalCount = $criticalCount
+            WarningCount  = $warningCount
+            InfoCount     = $infoCount
+        }
+
+        # B. Build the HTML table for this cluster's alerts
+        $htmlBody += Build-ClusterAlertsHtml -ClusterName $clusterName -Alerts $clusterAlerts
+    }
+
+    # 7. Build the complete HTML report
     $timestamp = Get-Date -Format "MM_dd_yyyy__HH_mm_ss"
     $reportFileName = "Nutanix_Unresolved_Alerts_$timestamp.html"
     $reportFilePath = Join-Path $reportsDir $reportFileName
@@ -97,7 +114,7 @@ function Main {
 
     Write-Host "Successfully generated report: $reportFilePath"
 
-    # 6. Update the master index page
+    # 8. Update the master index page
     Update-MasterIndexHtml -ReportsDir $reportsDir
 
     Write-Host "Master index page updated."
@@ -119,27 +136,6 @@ function Get-Credentials {
         $cred = Get-Credential -UserName $Username -Message "Enter password for Nutanix API access"
         $cred | Export-Clixml -Path $CredentialFile
         return $cred
-    }
-}
-
-function Get-NutanixUnresolvedAlerts {
-    param(
-        [string]$PCAddress,
-        [System.Management.Automation.PSCredential]$Credential
-    )
-    # CORRECTED API endpoint to get all unresolved alerts originating from Prism Element clusters
-    $filter = "resolved eq false and context.sourceEntityType eq 'CLUSTER'"
-    $encodedFilter = [System.Web.HttpUtility]::UrlEncode($filter)
-    $uri = "https://$($PCAddress):9440/api/monitoring/v4.0.b1/serviceability/alerts?`$filter=$($encodedFilter)"
-
-    try {
-        $response = Invoke-RestMethod -Method GET -Uri $uri -Credential $Credential -ContentType "application/json"
-        # The response from this endpoint contains the alerts in the 'data' property
-        return $response.data
-    }
-    catch {
-        Write-Warning "Failed to get unresolved alerts from $PCAddress. Error: $($_.Exception.Message)"
-        return $null # Return null on failure
     }
 }
 
