@@ -21,7 +21,6 @@
     Date: 2025-Oct-27
     Version: 1.7 - Final fix for alert summary counting logic.
     PowerShell Version: 5.1+
-
 #>
 
 # --- Script Configuration ---
@@ -327,4 +326,43 @@ function Get-HtmlStyle {
         ul { list-style-type: none; padding-left: 0; }
         li { background-color: #fff; margin: 8px 0; padding: 12px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; }
         li .date { font-weight: bold; }
-        li .links a { 
+        li .links a { margin-left: 15px; text-decoration: none; font-weight: bold; color: #007bff; }
+        li .links a:hover { text-decoration: underline; }
+        details { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; }
+        summary { font-weight: bold; font-size: 1.2em; cursor: pointer; padding: 10px 20px; position: relative; }
+        .cluster-content { padding: 0 20px 20px 20px; }
+        .back-link { font-size: 0.7em; font-weight: normal; margin-left: 20px; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; background-color: white; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden; }
+        th, td { border: 1px solid #dddddd; text-align: left; padding: 12px; }
+        th { background-color: #003a70; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #eaf2fa; }
+        footer { text-align: center; margin-top: 40px; font-size: 0.9em; color: #888; }
+    </style>
+"@
+}
+
+# --- Disable Certificate Validation for PowerShell 5 ---
+if ($PSVersionTable.PSVersion.Major -le 5) {
+    if (-not ([System.Net.ServicePointManager]::CertificatePolicy.GetType().Name -eq 'TrustAllCertsPolicy')) {
+        Add-Type -TypeDefinition @"
+        using System.Net;
+        using System.Security.Cryptography.X509Certificates;
+        public class TrustAllCertsPolicy : ICertificatePolicy {
+            public bool CheckValidationResult(
+                ServicePoint srvPoint, X509Certificate certificate,
+                WebRequest request, int certificateProblem) {
+                return true;
+            }
+        }
+"@ -ErrorAction SilentlyContinue
+        [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    }
+    # Enforce TLS 1.2 for modern security standards
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+}
+
+# --- Start the script ---
+Main
