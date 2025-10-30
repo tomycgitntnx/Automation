@@ -1,6 +1,9 @@
-Method invocation failed because [System.Management.Automation.PSInternalMemberSet] does not contain a method named 'ContainsKey'.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\NCC_clusters\NCC_clusters_v11.ps1:176 char:21
-+                 if ($statusCounts.PSBase.ContainsKey($statusName)) {
-+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (ContainsKey:String) [], RuntimeException
-    + FullyQualifiedErrorId : MethodNotFound
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Run-NccFromApi.ps1:150 char:57
++ ...  Write-Error "An error occurred while processing $ClusterAddress: $_"
++                                                      ~~~~~~~~~~~~~~~~
+Variable reference is not valid. ':' was not followed by a valid variable name character. Consider using ${} to delimit the name.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : InvalidVariableReferenceWithDrive
+ 
+
+PS C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC> 
