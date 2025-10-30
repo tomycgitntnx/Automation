@@ -1,9 +1,84 @@
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Run-NccFromApi.ps1:150 char:57
-+ ...  Write-Error "An error occurred while processing $ClusterAddress: $_"
-+                                                      ~~~~~~~~~~~~~~~~
-Variable reference is not valid. ':' was not followed by a valid variable name character. Consider using ${} to delimit the name.
-    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
-    + FullyQualifiedErrorId : InvalidVariableReferenceWithDrive
+Creating reports directory: NCC_Reports
+WARNING: Could not set custom SSL certificate policy. The script may fail if clusters use self-signed certificates.
+
+ + ------------------------------------------------------------
+Processing Cluster: D1-NX-PRISM
+Step 1: Retrieving Cluster UUID for D1-NX-PRISM...
+  -> Found Cluster Name: D1-NX-PRISM
+  -> Found Cluster UUID: 61e7c765-2dca-4113-a67c-e0cb1acd9704
+Step 2: Initiating NCC Health Checks...
+C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Run-NccFromApi.ps1 : An error occurred while processing D1-NX-PRISM: The remote server returned an error: (404) Not Found.
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Run-NccFromApi.ps1
  
 
-PS C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC> 
+ + ------------------------------------------------------------
+Processing Cluster: D2-NX-PRISM
+Step 1: Retrieving Cluster UUID for D2-NX-PRISM...
+  -> Found Cluster Name: D2-NX-PRISM
+  -> Found Cluster UUID: 41320199-c1e9-4036-9603-08a47b01f535
+Step 2: Initiating NCC Health Checks...
+C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Run-NccFromApi.ps1 : An error occurred while processing D2-NX-PRISM: The remote server returned an error: (404) Not Found.
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Run-NccFromApi.ps1
+ 
+
+ + ------------------------------------------------------------
+Processing Cluster: D1-NX-OBJPRISM
+Step 1: Retrieving Cluster UUID for D1-NX-OBJPRISM...
+  -> Found Cluster Name: D1-NX-OBJPRISM
+  -> Found Cluster UUID: 694023b3-1893-4442-9491-da9aad8e6007
+Step 2: Initiating NCC Health Checks...
+C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Run-NccFromApi.ps1 : An error occurred while processing D1-NX-OBJPRISM: The remote server returned an error: (404) Not Found.
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Run-NccFromApi.ps1
+ 
+
+ + ------------------------------------------------------------
+Processing Cluster: D2-NX-OBJPRISM
+Step 1: Retrieving Cluster UUID for D2-NX-OBJPRISM...
+  -> Found Cluster Name: D2-NX-OBJPRISM
+  -> Found Cluster UUID: 4383db31-e598-4840-a10d-78b2e8ddbbc3
+Step 2: Initiating NCC Health Checks...
+C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Run-NccFromApi.ps1 : An error occurred while processing D2-NX-OBJPRISM: The remote server returned an error: (404) Not Found.
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Run-NccFromApi.ps1
+ 
+
+ + ------------------------------------------------------------
+Processing Cluster: D1-NX-VDIPRISM
+Step 1: Retrieving Cluster UUID for D1-NX-VDIPRISM...
+  -> Found Cluster Name: D1-NX-VDIPRISM
+  -> Found Cluster UUID: 82f8e913-dfe8-46d4-966a-71bb3adb851a
+Step 2: Initiating NCC Health Checks...
+C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Run-NccFromApi.ps1 : An error occurred while processing D1-NX-VDIPRISM: The remote server returned an error: (404) Not Found.
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Run-NccFromApi.ps1
+ 
+
+ + ------------------------------------------------------------
+Processing Cluster: D2-NX-VDIPRISM
+Step 1: Retrieving Cluster UUID for D2-NX-VDIPRISM...
+  -> Found Cluster Name: D2-NX-VDIPRISM
+  -> Found Cluster UUID: 32f3308a-fa17-41bd-ab10-1a725a41e5b3
+Step 2: Initiating NCC Health Checks...
+C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Run-NccFromApi.ps1 : An error occurred while processing D2-NX-VDIPRISM: The remote server returned an error: (404) Not Found.
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Run-NccFromApi.ps1
+ 
+
+ + ------------------------------------------------------------
+Processing Cluster: S1-NX-PRISM
+Step 1: Retrieving Cluster UUID for S1-NX-PRISM...
+  -> Found Cluster Name: S1-NX-PRISM
+  -> Found Cluster UUID: 2fb68581-bcde-482c-b828-44139184337a
+Step 2: Initiating NCC Health Checks...
+C:\Users\xxacarrasco\Scripting\PS_scripts\Alerts_PC\Run-NccFromApi.ps1 : An error occurred while processing S1-NX-PRISM: The remote server returned an error: (404) Not Found.
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,Run-NccFromApi.ps1
+ 
+
+ + ------------------------------------------------------------
+Generating HTML summary report...
+HTML report generated successfully: NCC_Summary_Report.html
+Script execution finished.
