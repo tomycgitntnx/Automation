@@ -1,3 +1,4 @@
+
 <#
 .SYNOPSIS
     This script runs Nutanix Cluster Checks (NCC) on multiple clusters via the Prism Central REST API v4.
@@ -7,10 +8,12 @@
     It generates individual JSON reports for each cluster and a consolidated HTML summary report for all clusters.
     This script is designed for PowerShell 5.1 and uses the monitoring/v4.0 API.
 .NOTES
-    Version: 1.0
+    Version: 1.1
     Author: Tomy Carrasco
     Date: 2025-Oct-30
     Requirements: PowerShell 5.1 or later. A 'clusters.txt' file in the same directory.
+    Change Log:
+    v1.1 - Corrected a variable parsing error in the catch block for IP addresses.
 #>
 
 #region Script Configuration
@@ -147,7 +150,8 @@ foreach ($ClusterAddress in $Clusters) {
         $AllClusterResults += $resultForHtml
     }
     catch {
-        Write-Error "An error occurred while processing $ClusterAddress: $_"
+        # --- CORRECTED LINE ---
+        Write-Error "An error occurred while processing ${ClusterAddress}: $_"
         # Add a failure entry to the report
         $AllClusterResults += [PSCustomObject]@{
             ClusterName     = $ClusterAddress
