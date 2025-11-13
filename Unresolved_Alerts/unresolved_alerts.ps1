@@ -72,12 +72,13 @@ function Initialize-TlsConfiguration {
 
     [System.Net.ServicePointManager]::SecurityProtocol = $supportedProtocols
 
-    if (-not $script:OriginalCertValidationCallback) {
+    # Store the original callback if not already stored
+    if (-not (Get-Variable -Name 'OriginalCertValidationCallback' -Scope 'Script' -ErrorAction SilentlyContinue)) {
         $script:OriginalCertValidationCallback = [System.Net.ServicePointManager]::ServerCertificateValidationCallback
     }
 
     if ($Mode -eq 'Skip') {
-        if (-not $script:SkipCertValidationCallback) {
+        if (-not (Get-Variable -Name 'SkipCertValidationCallback' -Scope 'Script' -ErrorAction SilentlyContinue)) {
             $script:SkipCertValidationCallback = {
                 param($targetHost, $cert, $chain, $errors)
                 return $true
@@ -88,7 +89,14 @@ function Initialize-TlsConfiguration {
         Write-Log -Level 'WARN' -Message 'TLS certificate validation disabled. Use trusted certificates in production environments.'
     }
     else {
-        [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $script:OriginalCertValidationCallback
+        # Only restore if we have a stored original callback
+        if (Get-Variable -Name 'OriginalCertValidationCallback' -Scope 'Script' -ErrorAction SilentlyContinue) {
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $script:OriginalCertValidationCallback
+        }
+        else {
+            # If no original was stored, set to null (default behavior)
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = $null
+        }
     }
 }
 
