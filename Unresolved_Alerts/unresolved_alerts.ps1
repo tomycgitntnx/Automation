@@ -70,7 +70,7 @@ function Initialize-TlsConfiguration {
     if ($Mode -eq 'Skip') {
         if (-not $script:SkipCertValidationCallback) {
             $script:SkipCertValidationCallback = {
-                param($sender, $cert, $chain, $errors)
+                param($targetHost, $cert, $chain, $errors)
                 return $true
             }
         }
@@ -196,7 +196,7 @@ function Get-ClusterTargetsFromFile {
     return $entries
 }
 
-function Ensure-Directory {
+function New-Directory {
     param (
         [Parameter(Mandatory)]
         [string]$Path
@@ -217,7 +217,7 @@ function Write-TextFileUtf8 {
     )
 
     $directory = Split-Path -Parent $Path
-    Ensure-Directory -Path $directory
+    New-Directory -Path $directory
     $encoding = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText($Path, $Content, $encoding)
 }
@@ -563,7 +563,7 @@ function Invoke-NutanixAlertsQuery {
                     }
 
                     $offset += $returnedCount
-                    if ($totalMatches -ne $null -and $offset -ge $totalMatches) {
+                    if ($null -ne $totalMatches -and $offset -ge $totalMatches) {
                         break
                     }
                 }
@@ -746,7 +746,11 @@ function New-DashboardHtml {
     $rowsBuilder = New-Object System.Text.StringBuilder
     foreach ($row in $SummaryRows) {
         $endpoint = ConvertTo-HtmlEncoded -InputObject $row.Endpoint
-        $link = if ($row.DetailFile) { "<a href=\"$($row.DetailFile)\">$endpoint</a>" } else { $endpoint }
+        if ($row.DetailFile) {
+            $link = "<a href=""" + $row.DetailFile + """>" + $endpoint + "</a>"
+        } else {
+            $link = $endpoint
+        }
         $criticalClass = if ($row.Critical -gt 0) { 'severity-critical' } else { '' }
         $warningClass = if ($row.Warning -gt 0) { 'severity-warning' } else { '' }
         $infoClass = if ($row.Info -gt 0) { 'severity-info' } else { '' }
@@ -754,7 +758,7 @@ function New-DashboardHtml {
         $statusBadge = if ($row.ErrorMessage) { '<span class="status status-error">Error</span>' } else { '<span class="status status-ok">OK</span>' }
         $apiVersion = if ($row.ApiVersion) { ConvertTo-HtmlEncoded -InputObject $row.ApiVersion } else { 'n/a' }
         $filter = if ($row.Filter) { ConvertTo-HtmlEncoded -InputObject $row.Filter } else { 'n/a' }
-        $errorHtml = if ($row.ErrorMessage) { "<div class=\"error-message\">$([System.Web.HttpUtility]::HtmlEncode($row.ErrorMessage))</div>" } else { '' }
+        $errorHtml = if ($row.ErrorMessage) { "<div class='error-message'>$([System.Web.HttpUtility]::HtmlEncode($row.ErrorMessage))</div>" } else { '' }
 
         $rowsBuilder.AppendLine(@"
             <tr>
@@ -879,7 +883,7 @@ function Publish-AlertsDashboard {
         [string]$OutputDirectory
     )
 
-    Ensure-Directory -Path $OutputDirectory
+    New-Directory -Path $OutputDirectory
 
     $summaryRows = @()
     foreach ($result in $Results) {
