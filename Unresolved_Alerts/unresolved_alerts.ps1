@@ -18,10 +18,10 @@
 [CmdletBinding()]
 param (
     [Parameter()]
-    [string]$ClusterListPath = (Join-Path -Path (Split-Path -Parent $PSCommandPath) -ChildPath 'cluster.txt'),
+    [string]$ClusterListPath = (Join-Path -Path (if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }) -ChildPath 'cluster.txt'),
 
     [Parameter()]
-    [string]$OutputDirectory = (Join-Path -Path (Split-Path -Parent $PSCommandPath) -ChildPath 'NutanixAlertDashboard_Output'),
+    [string]$OutputDirectory = (Join-Path -Path (if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }) -ChildPath 'NutanixAlertDashboard_Output'),
 
     [Parameter()]
     [switch]$ForceCredentialReset,
