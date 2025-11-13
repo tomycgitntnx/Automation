@@ -1,6 +1,6 @@
-Initialize-TlsConfiguration : The variable '$script:OriginalCertValidationCallback' cannot be retrieved because it has not been set.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Unresolved_alerts\unresolved_alerts.ps1:931 char:5
-+     Initialize-TlsConfiguration -Mode $TlsValidation
-+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidOperation: (script:OriginalCertValidationCallback:String) [Initialize-TlsConfiguration], RuntimeException
-    + FullyQualifiedErrorId : VariableIsUndefined,Initialize-TlsConfiguration
+New-DashboardHtml : The variable '$script:HtmlEncoderLoaded' cannot be retrieved because it has not been set.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Unresolved_alerts\unresolved_alerts_v1.ps1:991 char:22
++     $dashboardHtml = New-DashboardHtml -SummaryRows $summaryRows
++                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (script:HtmlEncoderLoaded:String) [New-DashboardHtml], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined,New-DashboardHtml
