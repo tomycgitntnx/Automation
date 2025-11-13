@@ -1,6 +1,6 @@
 # Define your username and password
-$username = "ntx_collector_svc@vrs.state.va.us"
-$password = "M@ryH@d@Littl3L@mb2025!!"
+$username = "admin"
+$password = "passowed"
 
 # Base64 encode the credentials
 $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $username,$password)))
