@@ -1,0 +1,33 @@
+
+https://d2-nx-vdiprism:9440/api/monitoring/v4.0.b1/serviceability/alerts?$filter=isResolved eq false&$select=title,severity,creationTime,lastUpdatedTime,rootCauseAnalysis,sourceEntity/name
+
+
+        {
+            "$reserved": {
+                "$fv": "v4.r0"
+            },
+            "$objectType": "monitoring.v4.serviceability.Alert",
+            "extId": "6bc4f462-a6b9-4373-a186-5b94f1a48212",
+            "sourceEntity": {
+                "$reserved": {
+                    "$fv": "v4.r0"
+                },
+                "$objectType": "monitoring.v4.common.AlertEntityReference",
+                "name": "D2-NX-VDIPRISM",
+                "extId": "32f3308a-fa17-41bd-ab10-1a725a41e5b3"
+            },
+            "title": "The PC admin user password is going to expire soon or has already expired.",
+            "creationTime": "2025-11-07T11:20:37.973029Z",
+            "lastUpdatedTime": "2025-11-13T11:20:37.872333Z",
+            "severity": "WARNING",
+            "rootCauseAnalysis": [
+                {
+                    "$reserved": {
+                        "$fv": "v4.r0"
+                    },
+                    "$objectType": "monitoring.v4.serviceability.RootCauseAnalysis",
+                    "cause": "The PC admin password is going to expire soon or has already expired.",
+                    "resolution": "Change the password for PC admin user or refer to KB-18014."
+                }
+            ]
+        },
