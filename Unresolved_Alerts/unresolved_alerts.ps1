@@ -18,10 +18,10 @@
 [CmdletBinding()]
 param (
     [Parameter()]
-    [string]$ClusterListPath = (Join-Path -Path (if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }) -ChildPath 'cluster.txt'),
+    [string]$ClusterListPath,
 
     [Parameter()]
-    [string]$OutputDirectory = (Join-Path -Path (if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }) -ChildPath 'NutanixAlertDashboard_Output'),
+    [string]$OutputDirectory,
 
     [Parameter()]
     [switch]$ForceCredentialReset,
@@ -36,6 +36,15 @@ param (
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Normalize default paths if not provided
+$scriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+if (-not $ClusterListPath) {
+    $ClusterListPath = Join-Path -Path $scriptRoot -ChildPath 'cluster.txt'
+}
+if (-not $OutputDirectory) {
+    $OutputDirectory = Join-Path -Path $scriptRoot -ChildPath 'NutanixAlertDashboard_Output'
+}
 
 function Write-Log {
     param (
