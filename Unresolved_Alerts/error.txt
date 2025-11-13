@@ -1,6 +1,6 @@
-if : The term 'if' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Unresolved_alerts\unresolved_alerts.ps1:21 char:50
-+     [string]$ClusterListPath = (Join-Path -Path (if ($PSScriptRoot) { ...
-+                                                  ~~
-    + CategoryInfo          : ObjectNotFound: (if:String) [], ParentContainsErrorRecordException
-    + FullyQualifiedErrorId : CommandNotFoundException
+Initialize-TlsConfiguration : The variable '$script:OriginalCertValidationCallback' cannot be retrieved because it has not been set.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Unresolved_alerts\unresolved_alerts.ps1:931 char:5
++     Initialize-TlsConfiguration -Mode $TlsValidation
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (script:OriginalCertValidationCallback:String) [Initialize-TlsConfiguration], RuntimeException
+    + FullyQualifiedErrorId : VariableIsUndefined,Initialize-TlsConfiguration
