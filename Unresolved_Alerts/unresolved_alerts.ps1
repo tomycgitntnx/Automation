@@ -541,7 +541,7 @@ function Invoke-NutanixAlertsQuery {
     $pageSize = 200
 
     foreach ($version in $apiVersions) {
-        $baseUri = "https://$Endpoint:9440/api/nutanix/$version/alerts/list"
+        $baseUri = "https://$Endpoint`:9440/api/nutanix/$version/alerts/list"
         foreach ($filter in $filters) {
             $collectedAlerts = @()
             $offset = 0
