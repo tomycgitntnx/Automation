@@ -240,7 +240,7 @@ function Write-TextFileUtf8 {
 }
 
 function Initialize-HtmlSupport {
-    if (-not $script:HtmlEncoderLoaded) {
+    if (-not (Get-Variable -Name 'HtmlEncoderLoaded' -Scope 'Script' -ErrorAction SilentlyContinue)) {
         Add-Type -AssemblyName System.Web
         $script:HtmlEncoderLoaded = $true
     }
