@@ -22,21 +22,28 @@ $headers = @{
 }
 
 # Define the URI of the v4 API endpoint for alerts
-# Corrected the endpoint based on internal API mapping documents.
-$uri = "https://$($pc_ip):9440/api/monitoring/v4.0.b1/serviceability/alerts" 
+# This is the correct endpoint to list alerts.
+# We add a filter to get only unresolved alerts.
+$filter = "status ne 'RESOLVED'"
+$uri = "https://{0}:9440/api/monitoring/v4.0.b1/alerts?`$filter={1}" -f $pc_ip, $filter
 
 # Invoke the REST method with the headers
 try {
     Write-Host "Querying API endpoint: $uri"
     # Added -SkipCertificateCheck for environments with self-signed certificates
-    # Note: For PowerShell 5.1, if -SkipCertificateCheck is not available or doesn't work,
-    # you may need to add the following line before the Invoke-RestMethod call:
+    # Note: For PowerShell 5.1, you might need to use the line below instead of -SkipCertificateCheck
     # [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
     $response = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers -SkipCertificateCheck
 
-    # Display the response formatted as JSON
-    Write-Host "Successfully retrieved alerts:"
-    $response | ConvertTo-Json -Depth 10 # Increased depth to ensure full object visibility
+    # Check if any alerts were returned
+    if ($response.data) {
+        # Display the response formatted as JSON
+        Write-Host "Successfully retrieved unresolved alerts:"
+        $response.data | ConvertTo-Json -Depth 10 # Increased depth to ensure full object visibility
+    }
+    else {
+        Write-Host "No unresolved alerts found."
+    }
 }
 catch {
     # Provide more detailed error information
