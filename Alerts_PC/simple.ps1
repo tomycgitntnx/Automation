@@ -31,6 +31,11 @@ $uri = "https://{0}:9440/api/monitoring/v4.0.b1/alerts?`$filter={1}" -f $pc_ip, 
 try {
     Write-Host "Querying API endpoint: $uri"
 
+    # --- FIX FOR "Underlying connection was closed" ERROR ---
+    # This line forces the current PowerShell session to use TLS 1.2.
+    # Older versions of PowerShell default to outdated protocols (TLS 1.0/1.1) which are rejected by modern servers.
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+
     # --- CHANGE FOR POWERSHELL 5.1 ---
     # The line below bypasses SSL certificate validation in older PowerShell versions.
     [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
