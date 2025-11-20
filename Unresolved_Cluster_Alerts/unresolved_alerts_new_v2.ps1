@@ -137,6 +137,7 @@ foreach ($pc in $pcList) {
                     Message           = $_.message
                     Resolution        = $_.probableCause
                     RootCauseAnalysis = $_.rootCauseAnalysis
+                    LastUpdateTime    = $_.lastUpdateTime
                 }
             }
         } else {
