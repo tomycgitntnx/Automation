@@ -1,44 +1,10 @@
-PS C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli> . 'C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1'
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:145 char:52
-+                     elseif ($alertAge.TotalDays >= 1 -and $alertAge.T ...
-+                                                    ~
-Unexpected token '1' in expression or statement.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:145 char:52
-+                     elseif ($alertAge.TotalDays >= 1 -and $alertAge.T ...
-+                                                    ~
-Missing closing ')' after expression in 'elseif' statement.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:137 char:21
-+                 try {
-+                     ~
-Missing closing '}' in statement block or type definition.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:145 char:84
-+ ...    elseif ($alertAge.TotalDays >= 1 -and $alertAge.TotalDays -le 7) {
-+                                                                       ~
-The Try statement is missing its Catch or Finally block.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:132 char:44
-+             foreach($alert in $group.Group){
-+                                            ~
-Missing closing '}' in statement block or type definition.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:127 char:44
-+         foreach ($group in $groupedAlerts) {
-+                                            ~
-Missing closing '}' in statement block or type definition.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:125 char:30
-+     if ($alerts.Count -gt 0) {
-+                              ~
-Missing closing '}' in statement block or type definition.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:85 char:37
-+ foreach ($namecluster in $clusters) {
-+                                     ~
-Missing closing '}' in statement block or type definition.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:145 char:84
-+ ...    elseif ($alertAge.TotalDays >= 1 -and $alertAge.TotalDays -le 7) {
-+                                                                       ~
-Unexpected token ')' in expression or statement.
-At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.5.ps1:148 char:50
-+                     elseif ($alertAge.TotalHours < 24) {
-+                                                  ~
-The '<' operator is reserved for future use.
-Not all parse errors were reported.  Correct the reported errors and try again.
-    + CategoryInfo          : ParserError: (:) [], ParseException
-    + FullyQualifiedErrorId : UnexpectedToken
+$createdOnDate = [datetime]::Parse($alert.CreatedOnStr)
+Exception calling "Parse" with "1" argument(s): "String was not recognized as a valid DateTime."
+At line:1 char:1
++ $createdOnDate = [datetime]::Parse($alert.CreatedOnStr)
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
+    + FullyQualifiedErrorId : FormatException
+
+PS C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli> $alert.createdonStr
+Tue Nov 25 03:59:53 UTC 2025
