@@ -1,0 +1,46 @@
+PS C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli> . 'C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1'
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:140 char:52
++                     elseif ($alertAge.TotalDays >= 1) { $ageClass = " ...
++                                                    ~
+Unexpected token '1' in expression or statement.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:140 char:52
++                     elseif ($alertAge.TotalDays >= 1) { $ageClass = " ...
++                                                    ~
+Missing closing ')' after expression in 'elseif' statement.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:136 char:21
++                 try {
++                     ~
+Missing closing '}' in statement block or type definition.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:140 char:53
++                     elseif ($alertAge.TotalDays >= 1) { $ageClass = " ...
++                                                     ~
+The Try statement is missing its Catch or Finally block.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:133 char:44
++             foreach($alert in $group.Group){
++                                            ~
+Missing closing '}' in statement block or type definition.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:129 char:44
++         foreach ($group in $groupedAlerts) {
++                                            ~
+Missing closing '}' in statement block or type definition.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:127 char:30
++     if ($alerts.Count -gt 0) {
++                              ~
+Missing closing '}' in statement block or type definition.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:87 char:37
++ foreach ($namecluster in $clusters) {
++                                     ~
+Missing closing '}' in statement block or type definition.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:140 char:53
++                     elseif ($alertAge.TotalDays >= 1) { $ageClass = " ...
++                                                     ~
+Unexpected token ')' in expression or statement.
+At C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli\Generate-NutanixAlertsAndIndex_v2.2.ps1:141 char:50
++                     elseif ($alertAge.TotalHours < 24) { $ageClass =  ...
++                                                  ~
+The '<' operator is reserved for future use.
+Not all parse errors were reported.  Correct the reported errors and try again.
+    + CategoryInfo          : ParserError: (:) [], ParseException
+    + FullyQualifiedErrorId : UnexpectedToken
+
+PS C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli> 
