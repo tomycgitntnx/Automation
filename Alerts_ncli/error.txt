@@ -1,9 +1,1 @@
- $createdOnDate = [datetime]::ParseExact($alert.CreatedOnStr, $dateFormat, $null)
-
->  $createdOnDate = [datetime]::ParseExact($alert.CreatedOnStr, $dateFormat, $null)
-Exception calling "ParseExact" with "3" argument(s): "String was not recognized as a valid DateTime."
-At line:1 char:2
-+  $createdOnDate = [datetime]::ParseExact($alert.CreatedOnStr, $dateFo ...
-+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
-    + FullyQualifiedErrorId : FormatException
+WARNING: Could not parse date: Fri Sep 26 14:40:44 EDT 2025. Error: Unable to parse date string: 'Fri Sep 26 14:40:44 EDT 2025'
