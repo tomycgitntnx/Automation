@@ -1,10 +1,9 @@
-$createdOnDate = [datetime]::Parse($alert.CreatedOnStr)
-Exception calling "Parse" with "1" argument(s): "String was not recognized as a valid DateTime."
-At line:1 char:1
-+ $createdOnDate = [datetime]::Parse($alert.CreatedOnStr)
-+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ $createdOnDate = [datetime]::ParseExact($alert.CreatedOnStr, $dateFormat, $null)
+
+>  $createdOnDate = [datetime]::ParseExact($alert.CreatedOnStr, $dateFormat, $null)
+Exception calling "ParseExact" with "3" argument(s): "String was not recognized as a valid DateTime."
+At line:1 char:2
++  $createdOnDate = [datetime]::ParseExact($alert.CreatedOnStr, $dateFo ...
++  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (:) [], MethodInvocationException
     + FullyQualifiedErrorId : FormatException
-
-PS C:\Users\xxacarrasco\Scripting\PS_scripts\Get-Alerts-ncli> $alert.createdonStr
-Tue Nov 25 03:59:53 UTC 2025
