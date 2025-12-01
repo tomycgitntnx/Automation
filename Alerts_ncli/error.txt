@@ -1,11 +1,2 @@
-rtsAndIndex_v3.0.ps1'
---- Starting Part 1: Generating Consolidated Alert Report ---
-Connecting to d1-nx-objects to gather alerts...
-Found 1 alerts on d1-nx-objects.
-WARNING: Could not parse date: Fri Sep 26 14:40:44 EDT 2025. Error: Unable to parse date string: 'Fri Sep 26 14:40:44 EDT 2025'
-Connecting to d2-nx-vm to gather alerts...
-Found 4 alerts on d2-nx-vm.
-WARNING: Could not parse date: Fri Nov 07 09:22:49 EST 2025. Error: Unable to parse date string: 'Fri Nov 07 09:22:49 EST 2025'
-WARNING: Could not parse date: Tue Nov 04 03:48:28 EST 2025. Error: Unable to parse date string: 'Tue Nov 04 03:48:28 EST 2025'
-WARNING: Could not parse date: Sat Oct 18 01:00:43 EDT 2025. Error: Unable to parse date string: 'Sat Oct 18 01:00:43 EDT 2025'
-WARNING: Could not parse date: Sat Oct 18 01:00:43 EDT 2025. Error: Unable to parse date string: 'Sat Oct 18 01:00:43 EDT 2025'
+WARNING: Could not parse date: Fri Sep 26 11:40:44 PDT 2025. Error: Exception calling "Parse" with "1" argument(s): "String was not
+recognized as a valid DateTime."
