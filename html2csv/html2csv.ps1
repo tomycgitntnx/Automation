@@ -61,8 +61,7 @@ try {
     # --- 2. Parse the HTML File ---
 
     # Create an instance of the Internet Explorer COM object to parse the HTML.
-    # The '-f' (or -Force) parameter on New-Object helps release the COM object if it's already in memory.
-    $ie = New-Object -ComObject 'InternetExplorer.Application' -Force
+    $ie = New-Object -ComObject 'InternetExplorer.Application'
     $ie.Visible = $false # Keep the IE window hidden.
 
     # Navigate to the local HTML file.
@@ -79,7 +78,6 @@ try {
     # --- 3. Extract the Table Data ---
 
     # Select the first table in the document.
-    # To select a different table, you could use its ID, e.g., $htmlDocument.getElementById('myTableId')
     $table = $htmlDocument.getElementsByTagName('table')[0]
 
     if ($null -eq $table) {
@@ -93,7 +91,8 @@ try {
     $rows = $table.getElementsByTagName('tr')
 
     # Create an array to hold the data objects for CSV export.
-    $dataForCsv = [System.Collections.ArrayList]::new()
+    # **FIXED**: Changed [System.Collections.ArrayList]::new() to New-Object for PS 5.1 compatibility.
+    $dataForCsv = New-Object System.Collections.ArrayList
 
     # --- 4. Process Rows and Create Objects ---
 
@@ -107,9 +106,9 @@ try {
         $rowObject = New-Object -TypeName PSObject
 
         # Loop through each cell in the row and add it as a property to the custom object.
-        # The property name is taken from the corresponding header.
         for ($j = 0; $j -lt $headers.Count; $j++) {
             # Get the cell's text, trim whitespace, and add it to the object.
+            # Handles rows that may have fewer cells than headers.
             $cellText = if ($j -lt $cells.Count) { $cells[$j].innerText.Trim() } else { '' }
             Add-Member -InputObject $rowObject -MemberType NoteProperty -Name $headers[$j] -Value $cellText
         }
@@ -120,13 +119,16 @@ try {
 
     # --- 5. Export Data to CSV File ---
 
-    Write-Host "Exporting data to: $OutputCsvPath"
-
-    # Export the array of custom objects to a CSV file.
-    # -NoTypeInformation prevents PowerShell type information from being written to the first line.
-    $dataForCsv | Export-Csv -Path $OutputCsvPath -NoTypeInformation -Encoding UTF8
-
-    Write-Host "Successfully converted HTML table to CSV!" -ForegroundColor Green
+    # Check if any data was actually collected before exporting.
+    if ($dataForCsv.Count -gt 0) {
+        Write-Host "Exporting data to: $OutputCsvPath"
+        # Export the array of custom objects to a CSV file.
+        $dataForCsv | Export-Csv -Path $OutputCsvPath -NoTypeInformation -Encoding UTF8
+        Write-Host "Successfully converted HTML table to CSV!" -ForegroundColor Green
+    }
+    else {
+        Write-Warning "No data rows were found in the table to export."
+    }
 
 }
 catch {
@@ -139,6 +141,6 @@ finally {
     if ($ie) {
         $ie.Quit()
         [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ie) | Out-Null
-        Remove-Variable -Name 'ie' -Force -ErrorAction SilentlyContinue
+        Remove-Variable -Name 'ie' -ErrorAction SilentlyContinue
     }
 }
