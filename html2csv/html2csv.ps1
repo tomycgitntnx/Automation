@@ -2,15 +2,15 @@
 
 <#
 .SYNOPSIS
-    This script converts the first HTML table found in a specified HTML file into a CSV file.
+    This script converts a specific data table from an HTML file into a CSV file.
 
 .DESCRIPTION
-    The script prompts the user for the path to an input HTML file and a path for the output CSV file.
-    It parses the HTML, extracts the header and data rows from the first table, and exports them to a CSV file.
-    It uses the Internet Explorer COM object for robust HTML parsing, which is available on Windows systems.
+    The script prompts for an input HTML file and an output CSV path. It is specifically tailored
+    to parse the third table in the provided HTML structure, which contains entity information.
+    It intelligently handles empty cells in the first column by carrying forward the last known value.
 
 .PARAMETER InputHtmlPath
-    The full path to the source HTML file containing the table.
+    The full path to the source HTML file containing the tables.
 
 .PARAMETER OutputCsvPath
     The full path where the destination CSV file will be created.
@@ -23,9 +23,9 @@
 .NOTES
     Author: Tomy Carrasco
     Date: 2025-Dec-12
-    - This script is designed to parse the *first* table in the HTML file.
-    - It assumes the table has a header row using <th> tags.
-    - Requires PowerShell 5.1 or later and a Windows environment for the COM object.
+    - This script is designed to parse the *third* table in the HTML file.
+    - It requires PowerShell 5.1 or later and a Windows environment for the COM object.
+    - It includes special logic to populate empty 'Entity Type' cells.
 #>
 
 # --- Script Parameters ---
@@ -38,20 +38,20 @@ param (
     [string]$OutputCsvPath
 )
 
+# Initialize COM object variable to null
+$ie = $null
+
 try {
     # --- 1. Get Input and Output File Paths ---
 
-    # If the input path is not provided via parameters, prompt the user.
     if ([string]::IsNullOrWhiteSpace($InputHtmlPath)) {
         $InputHtmlPath = Read-Host -Prompt "Enter the full path to the input HTML file (e.g., C:\Temp\report.html)"
     }
 
-    # Validate that the input file exists.
     if (-not (Test-Path -Path $InputHtmlPath -PathType Leaf)) {
         throw "Error: The specified input file does not exist at '$InputHtmlPath'."
     }
 
-    # If the output path is not provided, prompt the user.
     if ([string]::IsNullOrWhiteSpace($OutputCsvPath)) {
         $OutputCsvPath = Read-Host -Prompt "Enter the full path for the output CSV file (e.g., C:\Temp\output.csv)"
     }
@@ -60,85 +60,95 @@ try {
 
     # --- 2. Parse the HTML File ---
 
-    # Create an instance of the Internet Explorer COM object to parse the HTML.
     $ie = New-Object -ComObject 'InternetExplorer.Application'
-    $ie.Visible = $false # Keep the IE window hidden.
+    $ie.Visible = $false
 
     # Navigate to the local HTML file.
     $ie.Navigate("file://$InputHtmlPath")
 
-    # Wait for the document to be fully loaded before proceeding.
+    # Wait for the document to be fully loaded.
     while ($ie.Busy) {
         Start-Sleep -Seconds 1
     }
 
-    # Store the parsed HTML document object.
     $htmlDocument = $ie.Document
 
-    # --- 3. Extract the Table Data ---
+    # --- 3. Extract the Correct Table and Data ---
 
-    # Select the first table in the document.
-    $table = $htmlDocument.getElementsByTagName('table')[0]
+    # Get all tables from the document.
+    $allTables = $htmlDocument.getElementsByTagName('table')
 
-    if ($null -eq $table) {
-        throw "Error: No <table> element was found in the HTML file."
+    # Check if there are enough tables. In the sample HTML, we need the third one (index 2).
+    if ($allTables.Count -lt 3) {
+        throw "Error: Expected at least 3 tables in the HTML file, but found $($allTables.Count). Cannot find the target data table."
     }
+
+    # **FIXED**: Select the third table (index 2) which contains the entity data.
+    $table = $allTables[2]
 
     # Extract the table header cells (<th>) and clean up the text content.
     $headers = $table.getElementsByTagName('th') | ForEach-Object { $_.innerText.Trim() }
 
-    # Get all rows (<tr>) in the table body.
+    if ($headers.Count -eq 0) {
+        throw "Error: No table headers (<th> tags) were found in the target table. Unable to generate CSV columns."
+    }
+
+    # Get all data rows (<tr>) from the target table.
     $rows = $table.getElementsByTagName('tr')
 
-    # Create an array to hold the data objects for CSV export.
-    # **FIXED**: Changed [System.Collections.ArrayList]::new() to New-Object for PS 5.1 compatibility.
     $dataForCsv = New-Object System.Collections.ArrayList
+    $lastEntityType = '' # Variable to hold the 'Entity Type' across rows.
 
-    # --- 4. Process Rows and Create Objects ---
+    # --- 4. Process Rows and Create Objects with Special Logic ---
 
-    # Loop through each row in the table, skipping the header row (index 0).
-    # The loop starts at 1.
-    for ($i = 1; $i -lt $rows.Count; $i++) {
-        # Get all data cells (<td>) for the current row.
-        $cells = $rows[$i].getElementsByTagName('td')
+    # Loop through each row, skipping any rows that don't contain data cells (like the header row).
+    foreach ($row in $rows) {
+        $cells = $row.getElementsByTagName('td')
 
-        # Create a new custom PowerShell object to hold the row's data.
-        $rowObject = New-Object -TypeName PSObject
+        # Only process rows that contain data cells.
+        if ($cells.Count -gt 0) {
+            $rowObject = New-Object -TypeName PSObject
 
-        # Loop through each cell in the row and add it as a property to the custom object.
-        for ($j = 0; $j -lt $headers.Count; $j++) {
-            # Get the cell's text, trim whitespace, and add it to the object.
-            # Handles rows that may have fewer cells than headers.
-            $cellText = if ($j -lt $cells.Count) { $cells[$j].innerText.Trim() } else { '' }
-            Add-Member -InputObject $rowObject -MemberType NoteProperty -Name $headers[$j] -Value $cellText
+            # **FIXED**: Special handling for the first column ('Entity Type').
+            # If the first cell is empty, use the value from the previous row.
+            $currentEntityType = $cells[0].innerText.Trim()
+            if ([string]::IsNullOrWhiteSpace($currentEntityType)) {
+                $entityTypeValue = $lastEntityType
+            } else {
+                $entityTypeValue = $currentEntityType
+                $lastEntityType = $entityTypeValue # Update the last known type.
+            }
+
+            # Add the 'Entity Type' to the object.
+            Add-Member -InputObject $rowObject -MemberType NoteProperty -Name $headers[0] -Value $entityTypeValue
+
+            # Process the rest of the cells for the current row.
+            for ($j = 1; $j -lt $headers.Count; $j++) {
+                $cellText = if ($j -lt $cells.Count) { $cells[$j].innerText.Trim() } else { '' }
+                Add-Member -InputObject $rowObject -MemberType NoteProperty -Name $headers[$j] -Value $cellText
+            }
+
+            [void]$dataForCsv.Add($rowObject)
         }
-
-        # Add the completed row object to our data array.
-        [void]$dataForCsv.Add($rowObject)
     }
 
     # --- 5. Export Data to CSV File ---
 
-    # Check if any data was actually collected before exporting.
     if ($dataForCsv.Count -gt 0) {
-        Write-Host "Exporting data to: $OutputCsvPath"
-        # Export the array of custom objects to a CSV file.
+        Write-Host "Exporting $($dataForCsv.Count) rows to: $OutputCsvPath"
         $dataForCsv | Export-Csv -Path $OutputCsvPath -NoTypeInformation -Encoding UTF8
         Write-Host "Successfully converted HTML table to CSV!" -ForegroundColor Green
+    } else {
+        Write-Warning "No data rows were found in the target table to export."
     }
-    else {
-        Write-Warning "No data rows were found in the table to export."
-    }
-
 }
 catch {
-    # If any errors occurred, write them to the console.
     Write-Error "An error occurred: $($_.Exception.Message)"
 }
 finally {
     # --- 6. Clean Up ---
     # Ensure the Internet Explorer COM object is closed and released from memory.
-    if ($ie) {
+    if ($null -ne $ie) {
         $ie.Quit()
         [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ie) | Out-Null
         Remove-Variable -Name 'ie' -ErrorAction SilentlyContinue
