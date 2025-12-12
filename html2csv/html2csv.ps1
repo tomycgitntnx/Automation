@@ -2,12 +2,13 @@
 
 <#
 .SYNOPSIS
-    This script converts a specific data table from an HTML file into a CSV file.
+    This script converts a specific data table from an HTML file into a CSV file using modern parsing methods.
 
 .DESCRIPTION
-    The script prompts for an input HTML file and an output CSV path. It is specifically tailored
-    to parse the third table in the provided HTML structure, which contains entity information.
-    It intelligently handles empty cells in the first column by carrying forward the last known value.
+    The script prompts for an input HTML file and an output CSV path. It reads the HTML content
+    directly and uses PowerShell's built-in parser to find and extract the third table.
+    This version avoids the unreliable Internet Explorer COM object. It also intelligently
+    handles empty cells in the first column by carrying forward the last known value.
 
 .PARAMETER InputHtmlPath
     The full path to the source HTML file containing the tables.
@@ -23,9 +24,11 @@
 .NOTES
     Author: Tomy Carrasco
     Date: 2025-Dec-12
-    - This script is designed to parse the *third* table in the HTML file.
-    - It requires PowerShell 5.1 or later and a Windows environment for the COM object.
+    Version: 1.0
+    - This script is designed to parse the *third* table in the specific HTML file provided.
+    - Requires PowerShell 5.1 or later.
     - It includes special logic to populate empty 'Entity Type' cells.
+    - This version does NOT use the Internet Explorer COM object for improved reliability.
 #>
 
 # --- Script Parameters ---
@@ -37,9 +40,6 @@ param (
     [Parameter(Mandatory=$false)]
     [string]$OutputCsvPath
 )
-
-# Initialize COM object variable to null
-$ie = $null
 
 try {
     # --- 1. Get Input and Output File Paths ---
@@ -58,20 +58,14 @@ try {
 
     Write-Host "Reading HTML file from: $InputHtmlPath"
 
-    # --- 2. Parse the HTML File ---
+    # --- 2. Parse the HTML File (Modern Method) ---
 
-    $ie = New-Object -ComObject 'InternetExplorer.Application'
-    $ie.Visible = $false
+    # Read the file content as a single string.
+    $htmlContent = Get-Content -Path $InputHtmlPath -Raw
 
-    # Navigate to the local HTML file.
-    $ie.Navigate("file://$InputHtmlPath")
-
-    # Wait for the document to be fully loaded.
-    while ($ie.Busy) {
-        Start-Sleep -Seconds 1
-    }
-
-    $htmlDocument = $ie.Document
+    # Cast the HTML string into an HTML object using PowerShell's built-in type accelerator.
+    # This avoids the unreliable Internet Explorer COM object.
+    $htmlDocument = [html]$htmlContent
 
     # --- 3. Extract the Correct Table and Data ---
 
@@ -83,7 +77,7 @@ try {
         throw "Error: Expected at least 3 tables in the HTML file, but found $($allTables.Count). Cannot find the target data table."
     }
 
-    # **FIXED**: Select the third table (index 2) which contains the entity data.
+    # Select the third table (index 2) which contains the entity data.
     $table = $allTables[2]
 
     # Extract the table header cells (<th>) and clean up the text content.
@@ -96,6 +90,7 @@ try {
     # Get all data rows (<tr>) from the target table.
     $rows = $table.getElementsByTagName('tr')
 
+    # Use a compatible method to create the list for storing data.
     $dataForCsv = New-Object System.Collections.ArrayList
     $lastEntityType = '' # Variable to hold the 'Entity Type' across rows.
 
@@ -109,7 +104,7 @@ try {
         if ($cells.Count -gt 0) {
             $rowObject = New-Object -TypeName PSObject
 
-            # **FIXED**: Special handling for the first column ('Entity Type').
+            # Special handling for the first column ('Entity Type').
             # If the first cell is empty, use the value from the previous row.
             $currentEntityType = $cells[0].innerText.Trim()
             if ([string]::IsNullOrWhiteSpace($currentEntityType)) {
@@ -124,8 +119,11 @@ try {
 
             # Process the rest of the cells for the current row.
             for ($j = 1; $j -lt $headers.Count; $j++) {
-                $cellText = if ($j -lt $cells.Count) { $cells[$j].innerText.Trim() } else { '' }
-                Add-Member -InputObject $rowObject -MemberType NoteProperty -Name $headers[$j] -Value $cellText
+                # Ensure the property name exists before trying to add it.
+                if ($j -lt $headers.Count) {
+                    $cellText = if ($j -lt $cells.Count) { $cells[$j].innerText.Trim() } else { '' }
+                    Add-Member -InputObject $rowObject -MemberType NoteProperty -Name $headers[$j] -Value $cellText
+                }
             }
 
             [void]$dataForCsv.Add($rowObject)
@@ -145,12 +143,4 @@ try {
 catch {
     Write-Error "An error occurred: $($_.Exception.Message)"
 }
-finally {
-    # --- 6. Clean Up ---
-    # Ensure the Internet Explorer COM object is closed and released from memory.
-    if ($null -ne $ie) {
-        $ie.Quit()
-        [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ie) | Out-Null
-        Remove-Variable -Name 'ie' -ErrorAction SilentlyContinue
-    }
-}
+# The 'finally' block for cleaning up the IE object is no longer needed.
