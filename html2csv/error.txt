@@ -1,0 +1,6 @@
+C:\Users\xxacarrasco\Scripting\PS_scripts\html2csv\html2csv.ps1 : An error occurred: Value does not fall within the expected range.
+At line:1 char:1
++ . 'C:\Users\xxacarrasco\Scripting\PS_scripts\html2csv\html2csv.ps1'
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,html2csv.ps1
